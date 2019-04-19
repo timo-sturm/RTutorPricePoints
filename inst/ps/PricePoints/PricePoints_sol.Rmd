@@ -1,0 +1,3549 @@
+# Price Points and Price Rigidity: An interactive Analysis with R
+
+Author:  Timo Sturm
+
+#< ignore
+```{r ""}
+library(restorepoint)
+# facilitates error detection
+restore.point.options(display.restore.point=!TRUE)
+set.storing(FALSE)
+
+library(RTutor)
+library(yaml)
+#library(restorepoint)
+setwd("C:/Users/Timo/Desktop/Master/Aktuell")
+ps.name = "PricePoints"; sol.file = paste0(ps.name,"_sol.Rmd")
+libs = c("ggplot2","data.table","Hmisc","bife","broom","plotly","scales","RColorBrewer","grid","gridExtra","knitr","gdata","webshot","dplyr","condformat","stargazer")
+# character vector of all packages you load in the problem set
+#name.rmd.chunks(sol.file) # set auto chunk names in this file
+create.ps(sol.file=sol.file, ps.name=ps.name, user.name=NULL,libs=libs, stop.when.finished=FALSE,use.memoise = TRUE, addons="quiz")
+show.shiny.ps(ps.name, load.sav=FALSE, sample.solution=FALSE, is.solved=FALSE, catch.errors=TRUE, launch.browser=TRUE)
+stop.without.error()
+```
+#>
+
+**"Hello"**! You are about to start with the major objective of my master thesis at Ulm University. The purpose of this problem set is to give you an insight into the relation between price points and price rigidity. It is based on the study **"Price Points and Price Rigidity"** from Daniel Levy, Dongwon Lee, Haipeng (Allan) Chen, Robert J. Kauffman, and Mark Bergen (2011). I will often refer to the findings of this study by *"the original authors"* or *"Levy et al. (2011)"*. In this problem set, you will have to solve exercises and quizzes. They will help you to get a better understanding of the topic. Through the entire problem set we will focus on four main questions:
+
+- **"How popular are different price endings?"**
+
+- **"How often does a price stick to its ending after a price change?"**
+
+- **"How large is the probability of a change for 9-ending prices compared to all other prices?"**
+
+- **"How big is the size of a price change for 9- and non-9-ending prices?"**
+
+After a short introduction to the existing literature and the data sets in chapter 1, chapters 2 to 5 will focus on these questions. After that, we will conduct a robustness check in chapter 6. In the last chapter, we will discuss the findings and lead to a conclusion.
+
+
+## Exercise Content
+
+1. Introduction
+
+  1.1 Motivation and Literature
+  
+  1.2 Overview of the Data
+  
+2. The Frequency of Price Endings
+  
+3. Transition Probability
+  
+  3.1 Last Digit of a Price
+  
+  3.2 Last two Digits of a Price
+
+4. Probability of a Price Change
+
+  4.1 Introduction
+
+  4.2 Empirical Study
+
+5. Mean Price Change
+
+6. Robustness Check
+
+7. Conclusion
+
+8. Literature
+
+
+The main study, a supplemental appendix and the data sets are available at the following websites:
+
+- **Study**: https://www.mitpressjournals.org/doi/pdf/10.1162/REST_a_00178
+- **Appendix**: https://www.mitpressjournals.org/doi/suppl/10.1162/REST_a_00178/suppl_file/REST934.Levy.e-supp.pdf
+- **Internet data**: https://dataverse.harvard.edu/dataset.xhtml?persistentId=hdl:1902.1/19345
+- **Dominick's data**: https://www.chicagobooth.edu/research/kilts/datasets/dominicks
+
+
+### How to proceed with this Problem Set
+
+You can solve the exercise of a chapter without solving the exercises from the previous chapters. However, I would suggest solving the exercises in the specified order as they follow a didactic structure. To solve tasks, you will have to enter R code into code chunks.
+
+**Structure of the Code Chunks**
+
+A code chunk includes the following buttons:
+
+- *edit*: Pressing this button enables you to edit the R code.
+
+- *check*: You can press this button to run the code and check its correctness.
+
+- *hint*: You can press this button to get additional advice for solving the chunk.
+
+- *run chunk*: By pressing this button the code gets executed without checking it.
+
+- *data*: This button leads you to a Data Explorer, where you can get information about the data sets and variables.
+
+- *solution*: You can directly get the right sample solution into your code chunk by pressing this button.
+
+Most of the time you will see the word "**Task**" above a code chunk. The corresponding text informs you what to do within the code chunk. Other components of this problem set are:
+- *quizzes*, where you can check your knowledge or make a guess about an outcome, 
+
+- *info boxes* that include supplementary information about the topic of the chapter or exercise and 
+
+- *awards* that shall encourage you by stating your achievements so far.
+
+To go to the next chapter, you can use the button "*Go to next exercise...*", at the bottom of this and all following pages. 
+
+So let us begin with our interactive study about the rigidity of price points.
+
+**"Good luck at solving the tasks and at achieving awards!"**
+
+<!--###################################################################################################################-->
+
+## Exercise 1.1 -- Motivation and Literature
+
+In this chapter, we will motivate why understanding price points and price rigidity could have importance for economic policy. After that, we will take a look at the existing literature. 
+
+
+### Motivation
+
+New Keynesian economists argue for a stabilization policy by the central bank (monetary policy) and the government (fiscal policy). They assume market failures on the free market. In their opinion, one of these market failures is the too slow adjustment of prices to economic changes (sticky prices). If not intervened, these market failures could potentially lead to economic inefficiencies (Dixon, 2001). 
+
+Therefore, understanding the source of price rigidity has importance for macroeconomic theories as well as governmental policy. One theory that tries to explain sticky prices is the so-called "price point theory." The idea behind this theory is that some prices have a psychological effect on the consumer and form kind of a barrier against price increases (Blinder et al., 1998). So let us have a look at the existing literature concerning this topic.
+
+
+### Literature
+
+
+*Catalog Data*
+
+The first study of the relation between price points and rigidity was published by Kashyap (1995). He examined catalog data from three American retailers. The data covered 34 years and included product categories for footwear, clothing, hunting and fishing gear. He found that these catalog prices tend to stick at certain endings. The price endings from 41 to 50 cents and 75 to 00 cents were more common than other endings.
+
+
+*Survey of U.S. firms*
+
+In 1998, Blinder et al. published a study in which they interviewed 200 U.S. firms. They discovered that 88% of retailers assign substantial importance to price points as a part of their pricing decisions.
+
+
+*Convenient Prices*
+
+Knotek (2011) focused on the frequent use of round prices that he terms "convenient prices" because their use reduces the amount of the change used in a transaction. He provides evidence for the relation between price rigidity and convenient price points (0 and 5) for businesses with buying processes that require rapid transactions. He found that goods and services, which show above average price rigidity support more often the use of convenient prices. Furthermore, he provided evidence for a higher recall frequency for convenient prices than for other price points.
+
+
+*Online Retailers*
+
+Hackl et al. (2014) analyzed data from 3,317 products posted by 698 online sellers. They found evidence for a lower probability of price changes, lower probability of getting underbid by competitors, and higher price jumps for prices with 99-cent and 9-euro endings in comparison to all other endings.
+
+
+The study for this problem set from Levy et al. (2011) aims to contribute to this growing area of research by focusing on a wide diversity of products across two data sets which show significant differences from each other concerning their product categories and kind of retailers.
+
+
+<!--###################################################################################################################-->
+
+## Exercise 1.2 -- Overview of the Data
+
+Let us start the study about price points and price rigidity. First, we need some data. We will deal with two data sets. The first data set is from the American supermarket chain "Dominick's." The second one includes merged data of electronic goods from different online retailers. In the following paragraphs, we will give an overview of these two data sets.
+
+
+### Dominick's
+
+The first dataset contains weekly price data for 27 different product categories over eight years at the supermarket chain Dominick's. At the time Levy et al. (2011) published this study the supermarket chain consisted of 93 stores with a market share in the Chicago metropolitan area of approximately 25 percent. Most of its stores closed by December 28, 2013, or were incorporated by other supermarket chains (Pathieu, 2013).
+
+![logodom](logodom.png)
+
+*Dominick's Logo, Source: https://web.archive.org/web/20110107124258/http://www.dominicks.com/IFL/Grocery/Home.*
+
+The data set contains transaction prices that were recorded by checkout scanners of all 93 stores. Dominick's categorizes their stores into four price tiers which are: "Cub fighter," "low," "medium" and "high." The first price tier "Cub fighter" stands for stores that are in direct competition with another supermarket chain ("Cub Foods"). The other price tiers relate to different pricing strategies regarding local demand and competition conditions. Like Levy et al. (2011) we will only focus on one store per price tier: store 8 for the low price tier, store 12 for the high price tier, store 133 for the medium price tier and store 122 for the "cub fighter." You can obtain the complete Dominick's data from the following website: https://www.chicagobooth.edu/research/kilts/datasets/dominicks. 
+
+
+**First Lines of Code**
+
+Let us start with the first lines of code. In the code chunk below we load the Dominick's data set ("dominicks.rds") with the command: `readRDS()` into our problem set. With the "=" sign we can save the data into a variable. We decided to call the variable "dominicks." In the next line, we apply the command `head()` on the variable to gain a first overview of the data (R Core Team, 2018).
+
+**Task**: Click on the "edit" and then on the "check" button to run the code chunk!
+```{r "1_2_0"}
+#< task_notest
+
+ dominicks = readRDS("dominicks.rds")
+ head(dominicks)
+ 
+#>
+```
+We get a table with six rows and 13 columns. Each column has a label which describes its content. For example, the column "STORE" includes an identification number for one of the four price tiers we mentioned earlier. Note that the function `head()` does not show all rows of the data set. By default, the function only returns the first six rows of the data (R Core Team, 2018). You can get more information about the used "R"-commands by clicking on the info box below. 
+
+#< info "R-Functions: readRDS() and head()"
+
+**Function with important Arguments for Us**:
+```r
+readRDS(file)
+```
+The function loads a data frame of "rds"-format into the environment. 
+
+- **file**: The filename of the R object if the data is stored in the same working directory, for example `readRDS("dat.rds")`. If the file is in another directory you have to reference the whole path, for example: `readRDS("C:/Users/Timo/Desktop/dat.rds")`.
+
+For additional information you can visit: https://stat.ethz.ch/R-manual/R-devel/library/base/html/readRDS.html.
+
+**Function with important Arguments for Us**:
+```r
+head(x)
+```
+The function shows the first or last rows of an object. By default it returns the first six rows of the data. 
+
+- **x**: A matrix, vector, data frame or function. By adding a "*-*" symbol, the function returns the last rows.
+
+For additional information you can visit: https://stat.ethz.ch/R-manual/R-devel/library/utils/html/head.html.
+
+#>
+
+
+### Internet Retailers
+
+Levy et al. (2011) obtained the second data set by a price data-gathering software agent from the price comparison site "www.bizrate.com". Bizrate Insights is a company that conducts market research. It provides consumer rating information to over 6,000 retailers and publishers across the United States, United Kingdom, France, Germany, and Canada. It also provides industry research for analysis purposes (Bizrate, 2019). 
+
+![logobiz](logobiz.png)
+
+*Bizrate Insights Logo, Source: https://bizrateinsights.com/.*
+
+The dataset contains daily prices of popular consumer electronic goods over a time horizon of approximately two years (March 26, 2003, to April 15, 2005) covering ten different product categories. We want to load this data set as well. Now it is time for your first task!
+
+**Task**: In the same style as for the Dominick's data, load the data set "Internet.rds" with the command `readRDS()`. Save the data into the variable "internet". In the next line use the command `head()` to show the first six rows of "internet". Press the "check" button to run your code.
+```{r "1_2_1"}
+
+internet = readRDS("Internet.rds")
+head(internet)
+
+#< hint
+display("just type: internet = readRDS(Internet.rds) and in the next line: head(internet)")
+#>
+```
+#< award "Import Master"
+**"Congratulations!"** 
+You can load data into an R-environment, like this problem set!
+#>
+
+The output table above contains 23 columns and six rows. Once again we can observe column names describing the content of the cells. As you can see, the column names are labeled in the same way as for the Dominick's data. The info box below includes a short description for the variables we will work within this chapter. However, first, have a look at the award you gained by solving the task!
+
+
+#< info "Variables of Interest for this Chapter"
+
+- **PRODCAT**: Product category.
+
+- **STORE**: Store ID.
+
+- **PID**: Product ID.
+
+- **DAY/WEEK**: Day/week of sales.
+
+- **PRICE**: Transaction price.
+
+- **END9**: A binary variable. It equals one if the last cent digit is 9, otherwise zero.
+
+#>
+
+
+**Number of Observations: "The bigger, the better!"**
+
+For the methods we will apply in the following chapters, it can be useful to have as much data as possible. Domingos (2012) stated the even higher importance of gaining more data in comparison to designing better methods and algorithms. So let us count the number of observations for the data sets. With the command `NROW()` we can check how many price observations our data sets have (R Core Team, 2018). As you can see in the code chunk below, we already computed the code for the Dominick's data. Can you repeat this for the Internet data?
+
+**Task**: Calculate the number of observations for the Internet data "internet". Use the command `NROW()`. Remove the "#" symbol ("uncomment") to run the already written code for the Dominick's data. Press the "*check*" button.
+```{r "1_2_2"}
+#< task_notest
+
+# NROW(dominicks)
+
+#>
+
+NROW(dominicks)
+
+NROW(internet)
+
+#< hint
+display("just type: NROW(internet)")
+#>
+```
+We get the number of observations for the Dominick's and Internet data. With the help of these results, try to answer your first quiz.
+
+
+**Quiz 1: Number of Observations**
+
+#< quiz "Number of Observations."
+parts:
+  - question: 1. Which of the data sets has more observations?
+    choices:
+        - Dominick's*
+        - Internet
+        - They share the same number of observations
+    multiple: FALSE
+    success: Great, your answer is correct! The Dominick's data has 3,875,378 price observations in comparison to the Internet data with 2,656,238 observations.
+    failure: Try again.
+
+#>
+
+#< award "First Quiz"
+**"Congratulations!"** 
+You successfully answered the first quiz!
+#>
+
+With more than 6.5 million observations for both data sets combined, we will continue the study.
+
+
+### Data Manipulation with dplyr()
+
+Now that we have imported the data sets and gained a first look into both of them, we want to compute some descriptive statistics (maximum, minimum, mean,...) to observe their differences and commonalities. For a start, we are interested in the price range of the data sets. In the following paragraph, we will show you a method of how to gain the price range with the tools of the data manipulation package `dplyr`. The main purpose of this exercise is not to show you an easy way to get the price range of a data frame. The main purpose is to introduce you to the syntax and useful functions within the `dplyr` package!
+
+
+**Price Range with arrange()**
+
+One possibility to gain the price range is to sort the data in decreasing and increasing order. This is possible with the command `arrange()` from the `dplyr` package (Wickham et al., 2018). As you can see in the code chunk below, we insert two arguments in the arrange function. The first argument is the data set "dominicks", which shall be sorted by the second argument "PRICE". We save the outcome in the variable "arranged.dom" and returne it with the `head()` command.
+
+**Task**: Run the code by pressing the "*check*" button.
+```{r "1_2_3"}
+#< task_notest
+
+arranged.dom = arrange(dominicks, PRICE)
+head(arranged.dom)
+
+#>
+```
+As you can see, we get six rows and all 13 columns of the Dominick's data arranged in increasing price order.
+
+
+**R-Functions: select() and pipe-operator "%>%"**
+
+Let us say we are only interested in the columns "PRICE," "STORE" and "PRODCAT." For only keeping these three columns in the data set, we can use the R command `select()` (Wickham et al., 2018). If we want to select and arrange a data set in one step, we can chain them together with the pipe operator `%>%`. We can also pipe the data set itself! This way we do not have to reference it in the following functions. We will practice this method in the next code chunk. For additional information about the chaining of functions with `%>%` and a more precise description of the `arrange()` and `select()` command you can click on the following info box.
+
+#< info "Pipe operator (%>%), arrange() and select()"
+
+**Function with important Arguments for Us**:
+```r
+arrange()
+```
+The function sorts a data frame or vector by variables from a given column.
+
+**Function with important Arguments for Us**:
+```r
+select()
+```
+The function returns a data set or vector with only the referenced columns.
+
+**Example for the pipe-operator "%>%"**:
+```r
+dat %>%                   # from the dataset "dat"
+select(STORE, PRICE)%>%   # select only the columns "STORE" and "PRICE"
+arrange(PRICE)            # arrange the selected data in increasing "PRICE"-order
+```
+This operator allows you to pipe the output from one function to the input of another function. The idea of piping is to read the functions from left to right. It is essential to add a `%>%` operator after each line of code except the last one (Wickham et al., 2018).
+
+For additional information, you can visit: https://cran.r-project.org/web/packages/dplyr/dplyr.pdf.
+
+#>
+
+Next, let us select the mentioned columns and arrange them! In the following code chunk, we select the price, store id and product category from the Dominick's data, arrange it in decreasing and increasing price order and return the first six rows.
+
+**Task**: Run the code by pressing the "check" button.
+```{r "1_2_4"}
+#< task_notest
+
+dominicks %>%
+  select(STORE, PRICE, PRODCAT)%>%
+  arrange(PRICE)%>%
+  head()
+
+dominicks %>%
+  select(STORE, PRICE, PRODCAT)%>%
+  arrange(-PRICE)%>%
+  head()
+
+#>
+```
+As you can see, we have a price range from 0.01 to 55.55 dollars in the Dominick's data. The minimum price of 1 cent results from candies placed in front of checkout registers in store 8. The maximum price corresponds to soft drinks and store 12. Do not forget that we only see the first six rows of data and therefore, should not make too many conclusions. In further chapters, we will examine the different stores and categories more precisely. Next, we want to get the price range of the Internet data.
+
+
+**Price Range for the Internet data**
+
+**Task**: In the same fashion as in the task before, figure out the price range for the Internet data. Return two tables only including the columns "PRODCAT" and "PRICE" and sort them in decreasing and increasing price order. You will need the following commands:
+- `select()`
+- `arrange()`
+- `head()`
+```{r "1_2_5"}
+
+internet %>%
+  select(PRICE, PRODCAT)%>%
+  arrange(PRICE)%>%
+  head()
+
+internet %>%
+  select(PRICE, PRODCAT)%>%
+  arrange(-PRICE)%>%
+  head()
+
+#< hint
+display("You can use most of the code from the exercise before.")
+#>
+```
+#< award "The Piper never dies!"
+**"Congratulations!"** 
+You can chain data sets and functions together with the pipe operator `%>%`.
+#>
+
+For the Internet data, we get a price range from 3.99 dollars to 6,000 dollars. We observe the smallest price in the product category "Music CDs," and the highest price in the product category "Digital Cameras." So we have a much higher price range within this data set. This higher range could have been expected by the vast variety of highly priced electronic goods within this data set (Levy et al., 2011). In contrast, the Dominick's data only contains typical supermarket products like groceries. Consistent with our findings, this kind of products are typically in a much lower price range (Dutta et al., 1999). 
+
+
+**Column Referencing**
+
+Like mentioned before, there are much simpler ways to get the price range of a data set. For example, we could use the functions `max()` and `min()` to gain the maximum or minimum value of a vector. To run these functions for a data frame, we need to address them to the right column. There are many ways to reference a column. For this problem set, we will work with the `$` operator for most of the time and sometimes with the `[[]]` operator. You can inform yourself about these operators in the info box below.
+
+#< info "Column Referencing with $ and [[]]"
+
+**Function with important Arguments for Us**:
+```r
+x$name
+
+x[["name"]]
+```
+Both operators address the column "name" from a data frame "x."
+
+For more information, you can visit: https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html.
+#>
+
+So let us get the maximum and minimum price from the Dominick's data with the functions `max()` and `min()` by referencing the right column.
+
+**Task**: Uncomment the code below. Replace the "???" symbols with a referencing for the column "PRICE." To gain the maximum price we want to reference the column with the `$` operator. To gain the minimum price we want to reference the column with the `[[]]` operator.
+```{r "1_2_6"}
+#< task_notest
+
+# max(???)
+
+# min(???)
+
+#>
+max(dominicks$PRICE)
+
+min(dominicks[["PRICE"]])
+
+```
+#< award "There is more than one Way to skin a Cat"
+**"Congratulations!"** 
+You can address columns of a data frame with different methods.
+#>
+
+
+### Summarising with dplyr()
+
+Now that you understand how to chain a function with the pipe operator `%>%` and how to work with the commands `arrange()` and `select()`, we can proceed with the fundamental strength of the `dplyr` package: the grouping and summarizing of statistic values!
+
+For a start, let us summarize some more statistics:
+
+- the number of products ("Number.of.Products"),
+
+- the number of stores or retailers ("Number.of.Retailers"),
+
+- the mean of the price ("MeanP") and
+
+- the standard deviation of the price("SdP").
+
+We can compute these values by applying one of the following functions within a `summarise()` command: `NROW()`, `unique()`, `mean()` and `sd()`. We will explain the new functions in the following info box. To keep it short: the `summarise()` function can aggregate a data frame to a single row (Wickham et al., 2018). The key strength of this function will get more apparent when we introduce the `group_by()` command in the paragraph after.
+
+#< info "Functions within summarise()"
+
+**Function with important Arguments for Us**:
+```r
+unique(x)
+```
+The function returns a vector, data frame or array "x" with removed duplicate elements.
+
+**Function with important Arguments for Us**:
+```r
+mean(x)
+```
+The function computes the mean of a vector "x."
+
+**Function with important Arguments for Us**:
+```r
+sd(x)
+```
+The function computes the standard deviation of a vector "x."
+
+For additional information, you can visit: https://stat.ethz.ch/R-manual/R-devel/library/base/html/00Index.html.
+#>
+
+**Task**: Run the code.
+```{r "1_2_7"}
+#< task_notest
+tab.total.D = dominicks %>%
+summarise(Name = "Dominicks",
+          Number.of.Products = NROW(unique(PID)),
+          Number.of.Retailers = NROW(unique(STORE)),
+          MeanP = mean(PRICE), SdP=sd(PRICE))      
+
+tab.total.I = internet %>%
+summarise(Name = "Internet",
+          Number.of.Products  = NROW(unique(PID)),
+          Number.of.Retailers = NROW(unique(STORE)), 
+          MeanP = mean(PRICE), SdP=sd(PRICE))
+
+rbind(tab.total.D,tab.total.I)
+
+#>
+```
+
+By applying the command `rbind()`, we get one table with summarized statistics for the Internet and Dominick's data. We have 14,748 different product types in the Dominick's data and 474 different product types in the Internet data. The Internet data contains 293 different retailers in comparison to the four different price tiers in the Dominick's data. We observe a standard deviation of 1.75 in the Dominick's data and a standard deviation of 536.16 in the Internet data, which seem consistent with the calculated price ranges. The mean price for Dominick's is 2.55 dollars and the mean price for the internet retailers 337.05 dollars (Levy et al., 2011). In the next step, we will show you the actual key strength of the `summarise()` function!
+
+
+### Grouping and Summarising with dplyr
+
+Next, we want to compute these statistics for different subgroups of the data. For example, there could be stores or product categories with a higher mean price than others. Therefore, we need to group the data. 
+
+To group data sets in R, we can use the `dplyr` function `group_by()`. This function can create subgroups with respect to a specified variable. It is worth mentioning that this `group_by()` command works especially well together with the `summarise()` function. In the info box below we give you a short description of the two mentioned commands as well as a short example regarding their synergy effect.
+
+
+#< info "R-Functions: group_by() and summarise()"
+
+**Example: Mean price for different stores**
+```r
+dat%>%              
+group_by(STORE)%>%      # group "dat" by its different stores
+summarise(mean(PRICE))  # compute the mean price for each store
+```
+The function `group_by()` breaks down a data set into specified groups. After that, it is possible to apply other functions on that grouped variables (Wickham et al., 2018).
+
+Used together with `group_by()`, the function `summarise()` produces one row of outcome for each group (Wickham et al., 2018).
+
+You can get more information on the following website: https://cran.r-project.org/web/packages/dplyr/dplyr.pdf.
+#>
+
+
+**Grouping by Product Category**
+
+Now, let us calculate the same statistics we computed for the complete data sets for the grouped data. We are interested in the statistics for different product categories ("PRODCAT"). So we need to group our data and then summarize each of the values. We start with the Dominick's data. In addition, we round the statistics to two decimal places with the R-function `round()`.
+
+**Task**: Uncomment the code. Remove the gap in `group_by()` and replace it with the right grouping variable.
+```{r "1_2_8", table.max.rows=30}
+#< task_notest
+
+# dominicks %>%
+# group_by(___) %>%  
+# summarise(Obs.number = NROW(PID),
+#           Number.of.Products = NROW(unique(PID)),
+#           Number.of.Retailers = NROW(unique(STORE)),
+#           MeanP = round(mean(PRICE),digits=2),
+#           SdP=round(sd(PRICE),digits=2),
+#           MinP=min(PRICE), 
+#           MaxP=max(PRICE))      
+
+#>
+dominicks %>%
+group_by(PRODCAT) %>%  
+summarise(Obs.number = NROW(PID),
+          Number.of.Products = NROW(unique(PID)),
+          Number.of.Retailers = NROW(unique(STORE)),
+          MeanP = round(mean(PRICE),digits=2),
+          SdP=round(sd(PRICE),digits=2),
+          MinP=min(PRICE), 
+          MaxP=max(PRICE))      
+
+```
+As an output we get 27 rows, one for each of the 27 different product categories. With the help of these statistics, try answering the following quiz.
+
+
+**Quiz 2: Table Interpretation**
+
+#< quiz "Table Interpretation."
+parts:
+  - question: 1. The highest product variety with 2.584 different product types belongs to?
+    choices:
+        - Bath_Soap
+        - Frozen_Dinners
+        - Shampoos*
+        - Soaps
+    multiple: FALSE
+    success: Great! This is correct! Shampoos have the highest product variety. 
+    failure: Try again.
+  - question: 2. The highest mean price on the Dominick's data belongs to?
+    choices:
+        - Analgesics
+        - Laundry Detergents*
+        - Cereals
+    multiple: FALSE
+    success: Great! This is correct! Laundry Detergents has the highest mean price.
+    failure: Looks closer. There is one product category with a higher mean price.
+
+#>
+
+#< award "Group(ie)"
+**"Congratulations!"** 
+You know how to compute values for grouped data with `group_by()` and `summarise()`.
+#>
+
+As the last task in this chapter, we want to group the Internet data.
+
+**Task**: Run the code.
+```{r "1_2_9"}
+#< task_notest
+internet %>%
+group_by(PRODCAT) %>% 
+summarise(Obs.number = NROW(PID),
+          Number.of.Products  = NROW(unique(PID)),
+          Number.of.Retailers = NROW(unique(STORE)), 
+          MeanP = round(mean(PRICE),digits=2),
+          SdP=round(sd(PRICE),digits=2),
+          MinP=min(PRICE), MaxP=max(PRICE))
+#>
+```
+With 302,914, movie DVDs have the highest and with 79,386, notebook PCs have the lowest number of observations in our table. There is no considerable difference regarding the variety of product types in our categories, which could be a result of the selection algorithm the original authors used (Levy et al., 2011). With a number of 143, more than half of the retailers sell digital cameras in comparison to only 15 retailers selling music CDs and only 22, who sell DVDs. If you compare the mean price, the three categories movie DVDs, music CDs and video games have a relatively low price in comparison to the other seven categories with notebook PCs leading, including a mean price of 1666.66.
+
+
+### Summary of Chapter 1.
+
+**What We learned in this Chapter:**
+
+- The study from Levy et al. (2011) aims to contribute additional evidence for the price point theory, by focusing on a variety of products across two different data sets with more than 6.5 million observations.
+
+- One data set contains information about four different stores of a supermarket chain called Dominick's.
+
+- The other data set contains merged data of 293 different online retailers for electronic goods.
+
+- The data from the supermarket chain Dominick's has a low price range.
+
+- The Internet data has a high price range.
+
+- We have 27 product categories in the Dominick's data and 10 in the Internet data.
+
+
+**What Skills You should have mastered in this Chapter:**
+
+- You know how to load `.rds` data into our problem set.
+
+- You can count the number of observations in a vector or column with `NROW()`.
+
+- You know how to deal with `dplyr` commands and the `%>%` operator.
+
+- You can calculate statistic values like mean, minimum and maximum in R.
+
+- You know how to group data and summarize statistic values with `group_by()` and `summarise()`.
+
+
+<!--###################################################################################################################-->
+
+## Exercise 2.0 -- The Frequency of Price Endings
+
+Now that we gained some insights into the data sets and know how to work with the data manipulation tool `dplyr`, we can start the actual price study. In this chapter, we want to observe the frequency of price endings. First, we will give an introduction for the important variables for this study. After that, we will calculate the absolute frequency for each price ending. Then we will normalize the data to compare the two data sets with each other. To get a better overview, we will visualize the findings in the form of histograms and scatter plots. To create these graphics, we will introduce a new R-package called `ggplot2` and explain its key advantages. 
+
+Most of the time, we will need to re-import the data sets into the new chapter. So let us begin with this task.
+
+**Load the data sets**
+```{r "2_0"}
+#< task_notest
+internet = readRDS("Internet.rds")
+dominicks = readRDS("dominicks.rds")
+#>
+```
+**Price Ending Columns**
+
+Let us start by getting an overview of the essential variables within the following columns. 
+
+**Task**: Run the code below and take a look at the columns from this output. The function `distinct()` allows us to only select rows with different sets of values (Wickham et al., 2018).
+```{r "2_1"}
+#< task_notest
+
+internet %>%
+  select(PRICE, END1,END2,END3,END4,DEND1,DEND2)%>%
+  distinct() %>%
+  head()
+
+#>
+```
+We get seven columns with the leading familiar column PRICE, followed by six columns called "END1"," END2", "END3", "END4", "DEND1" and "DEND2". This latter six columns represent different price endings. For example, "END1" includes  the last cent digit, "END2" the last two cent digits and so on. In the info box below, you get a description for each ending variable. As a result of the low mean price, the Dominick's data only includes price ending columns for the cent endings ("END1" and "END2"). 
+
+#< info "Price Ending Colums"
+
+- **END1**:  The last cent digit of PRICE.
+- **END2**:  The last two cent digits of PRICE.
+- **END3**:  The last three digits of PRICE.
+- **END4**:  The last four digits of PRICE.
+- **DEND1**: The last dollar digit of PRICE.
+- **DEND2**: The last two dollar digits of PRICE.
+
+#>
+
+To check your understanding of the price columns, try to answer the following quiz.
+
+**Quiz 3: Understanding Columns**
+
+Let us say, we observe the following price for a digital camera:
+
+- **5499.95$**
+
+#< quiz "Understanding Columns."
+parts:
+  - question: 1. Which value would we expect in the column END1?
+    choices:
+        - 9
+        - 5*
+        - 95
+    multiple: FALSE
+    success: Great! This is correct! We only need the last cent digit.
+    failure: Try again.
+  - question: 2. Which value would we expect in the column END4?
+    choices:
+        - 5.499
+        - 99
+        - 99.95*
+    multiple: FALSE
+    success: Great! This is correct! We need the last four numbers of our price.
+    failure: Try again.
+  - question: 3. Which value would we expect in the column DEND2?
+    choices:
+        - 99.95
+        - 9.95
+        - 99*
+    multiple: FALSE
+    success: Great! This is correct! We only need the last 2 dollar digits.
+    failure: Try again.
+    
+#>
+
+#< award "Column(ist)"
+**"Congratulations!"** 
+You can interpret the content of the price ending columns.
+#>
+
+
+### Absolute Frequency of Price Endings
+
+Now that you are familiar with the columns we want to observe, we can continue the study. First, we aim to get a better picture of the absolute frequency of the different price endings. We will count the number of observations for each single cent ending and will arrange the output table in decreasing order. Again, we will make use of the functions `group_by()`, `summarise()`, `arrange()` and  `NROW()`.
+
+Which could be the least frequent ending in each data set? Make a guess.
+
+
+**Quiz 4: Least frequent Ending**
+
+#< quiz "Least frequent Ending."
+parts:
+  - question: 1. Which ending could be the least common ending for the Dominick's data set? 
+    choices:
+        - 1
+        - 8*
+        - 9
+    multiple: FALSE
+    success: Great! This is correct! 
+    failure: Try again.
+  - question: 2. Which ending could be the least common ending in the Internet data set?
+    choices:
+        - 1*
+        - 7
+        - 0
+    multiple: FALSE
+    success: Great! This is correct!
+    failure: Try again.
+    
+#>
+
+#< award "Clairvoyant Rank 1"
+**"Congratulations!"** 
+You are right in terms of the least favorite cent endings.
+#>
+
+So let us start computing the absolute frequency. In the code chunk below we group the data by their last cent ending and then compute the number of observations inside the `summarise()` function. After that, we arrange the data in decreasing order. With the commands `cbind()` and `setNames()` we combine both data tables and set new column names to produce a neatly arranged output. You can inform yourself about the new functions in the next info box.
+
+#< info "R-Functions: cbind() and setNames()"
+
+**Function with important Arguments for Us**:
+```r
+cbind(...)
+```
+The function combines a sequence of vectors, matrices or data-frames by columns.
+
+- **"..."**: The vectors or matrices that we want to combine.
+
+For more information, you can visit: https://stat.ethz.ch/R-manual/R-devel/library/base/html/cbind.html.
+
+**Function with important Arguments for Us**:
+```r
+setNames(object, nm)
+```
+This function can assign new column names to an object.
+
+- **object**: The object for that the new names shall be assigned.
+
+- **nm**: A character vector containing the names for the variables within the object.
+
+You can get more information on the following website: https://stat.ethz.ch/R-manual/R-devel/library/stats/html/setNames.html.
+
+#>
+
+**Task**: Run the code below!
+```{r "2_2"}
+#< task_notest
+dom.abs = dominicks %>%
+  group_by(END1)%>%
+  summarise(number=NROW(END1))%>%
+  arrange(-number)
+
+int.abs = internet %>%
+  group_by(END1)%>%
+  summarise(number=NROW(END1))%>%
+  arrange(-number)
+
+cbind(dom.abs,int.abs)%>%
+ setNames(., c("Dominick's End1", "Absolute Frequency", "Internet End1", "Absolute Frequency"))
+#>
+```
+We get a table including the absolute frequency for the single cent ending. In both data sets 9 is the most common digit, followed by 5 in the Dominick's data and 0 in the Internet data. The least frequent digit in the Dominick's data is 8. In general 1 is least common ending with a 9th place in the Dominick's data and a 10th place in the Internet data. 
+
+Note that we have different numbers of observations in our datasets. As mentioned in chapter 1, the Dominick's data includes 3,875,387 and the Internet data 2,656,238 observations. To enable a better comparison between these two data sets, we will calculate the relative frequency. 
+
+
+### Relative Frequency
+
+The relative frequency ($f_i$) is the number of observations for each group ($n_i$) divided by the total number of all observations ($N$) (Mood et al., 1974). In our case, we will divide by the total number of observations and then multiply the result by 100 to get the percentage of occurrence regarding the different endings. You can observe the corresponding equation in the paragraph below:
+
+$$f_i = \left(\frac{n_i}{N}\right)*100$$ 
+In the following code chunk, we will compute the relative frequency for the Dominick's and Internet data. We already completed the code for the Internet data. In the next step, we want to calculate the relative frequency for the Dominick's data. After computing this value, we will combine our two data frames, round the values and rename the columns to gain a better overview.
+
+**Task**: Uncomment the code. Fill the gaps to compute the relative frequency for the single cent digits of the Dominick's data.
+```{r "2_3"}
+#< task_notest
+
+#inter.freq.end1 = internet %>%
+#  group_by(END1)%>%
+#  summarise(percent=NROW(END1)/NROW(internet)*100)%>%
+#  arrange(-percent)
+
+# domi.freq.end1 = dominicks %>%
+#  group_by(____)%>%
+#  summarise(percent=____(END1)/NROW(dominicks)*100)%>%
+#  arrange(____)
+
+# cbind(domi.freq.end1, inter.freq.end1)%>%
+# round(digits=2)%>%
+# setNames(., c("Dominick's End1", "Relative Frequency", "Internet End1", "Relative Frequency"))
+
+#>
+ 
+inter.freq.end1 = internet %>%
+  group_by(END1)%>%
+  summarise(percent=NROW(END1)/NROW(internet)*100)%>%
+  arrange(-percent)
+
+domi.freq.end1 = dominicks %>%
+  group_by(END1)%>%
+  summarise(percent=NROW(END1)/NROW(dominicks)*100)%>%
+  arrange(-percent)
+
+cbind(domi.freq.end1,inter.freq.end1)%>%
+round(digits=2)%>%
+setNames(., c("Dominick's End1", "Relative Frequency", "Internet End1", "Relative Frequency"))
+
+```
+#< award "Relative Strenght"
+**"Congratulations!"** 
+You can compute the relative frequency for single price endings.
+#>
+
+Let us compare the data frames! If the price endings were randomly assigned, we would expect a 10% share per price ending. As you may notice, nearly 70% of the observed prices in the Dominick's data end with 9. The second most common price ending is 5 with a relative frequency of approximately 12%. With approximately 33%, 9 is the most popular ending digit in the Internet data, followed by 0 with 24.14% and 5 with 17.38%.
+
+
+### Visualisation with ggplot2
+
+A more comprehensive overview of the data can be achieved by visualizing it. The package `ggplot2` provides useful tools for vizualising data. It includes a huge variety of functions for creating complex plots. It represents a different approach in layering graphics than basic R-packages which can help understand the code better. The package is based on the "grammar of graphics" theory. The general idea behind this theory is to build up a graphic from multiple data-layers. The two most important layers are aesthetics (`aes()`) and geometries (`geom_()`). Graphical properties that encode the data on the plot are referred to as aesthetics. Some examples of aesthetics could be size, shape or color. The visuals themselves are called geometries. Examples for geometries are points, lines, and ribbons. Every layer is added utilizing the "+" operator (Wickham, 2016). In the following info box, you can inform yourself about all functions of `ggplot2` that we will use in the next paragraphs. We want to visualize the frequency tables in the form of histograms. 
+
+
+#< info "R-package: ggplot2 - Components of Interest"
+
+- `ggplot()`: The general function that initializes an object.
+
+- `aes()`:  Inside this function, we specify the variables we want to map on the axes. 
+
+- `geom_col()`: Creates a bar chart, which represents the values in the data.
+
+- `labs()`: This function labels the different axes, the legend, and title.
+
+- `scale_x_continuous()`: This function enables scale manipulation. It defines which values of the x-axis shall be labeled. Specific breaks can be added.
+
+For further information, you can visit the following site: https://cran.r-project.org/web/packages/ggplot2/ggplot2.pdf.
+#>
+
+First, we want to visualize the data from the already calculated relative frequencies for the single cent digits. As you can see in the code chunk below, we use a generic `ggplot2` command to implement our data, in this case the Dominick's data. With the `+` command we add a geometries layer, in this case the `geom_col()` layer. Furthermore, we add another layer called `labs()`. In the last step, we add a label called `scale_x_continuous()` that includes the R-function `seq()`. The `seq()` function specifies the breaks for the x-axis. You can get additional information in the info box below.
+
+
+#< info "R-Function: seq()"
+
+**Function with important Arguments for Us**:
+```r
+seq(from, to, by)
+```
+This function generates regular sequences from a determined start(`from`) to a determined end (`to`) by a given increment of sequences (`by`).
+
+For additional information, you can visit: https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html.
+
+#>
+
+**Task**: Run the code to observe your first ggplot.
+```{r "2_4"}
+#< task_notest
+
+ggplot(domi.freq.end1, aes(x=END1,y= percent)) +                      #1)
+  geom_col() +                                                        #2)
+  labs(x="Price Ending in Cents",                                     #3)
+       y="Frequency", 
+       title="Frequency Distribution of the last Digit of the Dominick's Data")+     
+  scale_x_continuous(breaks=(seq(0,9)))                               #4)
+
+#>
+```
+We get a histogram including the relative frequency distribution of the single cent ending for the Dominick's data. On the x-axis the different price endings are listed and on the y-axis the relative frequency can be observed. Now you can check your understanding of the ggplot-syntax by answering the following quiz.
+
+
+**Quiz 5: ggplot2**
+
+Take a look at the task box above. You will notice some numbers in brackets behind the "#" symbol. Which statement for each number is correct?
+
+#< quiz "ggplot2"
+parts:
+  - question: 1. Number 1) 
+    choices:
+        - gives the graphic a title and names the axis
+        - adds breaks from zero to nine
+        - builds a bar chart with the transferred data
+        - initializes the Dominick's data and maps the x- and y-axis*
+    multiple: FALSE
+    success: Great! This is correct! We map our price endings in X and calculate the percentage of the empirical distribution in Y.
+    failure: Try again.
+  - question: 2. Number 2) 
+    choices:
+        - gives the graphic a title and names the axis
+        - adds breaks from zero to nine
+        - builds a bar chart with the transferred data*
+        - initializes the Dominick's data and maps the x- and y-axis
+    multiple: FALSE
+    success: Great! This is correct! 
+    failure: Try again.
+  - question: 3. Number 3) 
+    choices:
+        - gives the graphic a title and names the axis*
+        - adds breaks from zero to nine
+        - builds a bar chart with the transferred data
+        - initializes the Dominick's data and maps the x- and y-axis
+    multiple: FALSE
+    success: Great! This is correct! 
+    failure: Try again.
+  - question: 4. Number 4) 
+    choices:
+        - gives the graphic a title and names the axis
+        - adds breaks from zero to nine*
+        - builds a bar chart with the transferred data
+        - initializes the Dominick's data and maps the x- and y-axis
+    multiple: FALSE
+    success: Great! This is correct! 
+    failure: Try again.
+    
+#>
+
+
+#< award "GG-Starter"
+**"Congratulations!"** 
+You understand the layering within the `ggplot2` package, that is based on the grammar of graphics.
+#>
+
+
+**Multiple Histograms with ggplot2()**
+
+The package `ggplot2()` can do much more! For example, we could show the distribution of the Dominick's data and Internet data together in one histogram. For this purpose, we must at first reshape our data into a long format with additional data describing if we deal with the Internet or Dominick's data set. The command `combine()` from the `gdata` package fits our needs perfectly. It takes our two data sets and combines them into rows of a conventional data frame including an additional column for referencing the source (Gregory et al., 2015). Wide and long are descriptions for different presentations regarding data (Thompson, 1997). If you are not familiar with these data types, you can take a look at the info box below and get an example for each format.
+
+
+#< info "Long and Wide Format"
+
+**Wide**: This data format represents each different variable in a separate column (Thompson, 1997). For example:
+
+![wide](wide.png)
+
+*Source: Own creation.*
+
+As you can see, we have four columns and three rows in this example. For the last digit as well as for the frequency we can see separated columns for each data set.
+
+
+**Long**: This data format includes all values in one column and the context of the value in another column (Thompson, 1997). For example:
+
+![long](long.png)
+
+*Source: Own creation.*
+
+As you can see, we get an output with only three columns and six rows. The first column includes the frequency. The second column includes the digits, and the third column references the source.
+#>
+
+
+**Relative Frequency for the single Dollar Digit**
+
+Before we continue with combining the relative frequency tables for the single cent digits, we want to calculate the relative frequency for the single dollar digit from the Internet. We compute the relative frequency in the same fashion as for the single cent digits. Because we want to combine the output table with the other frequency tables as well, we have to rename the variable "DEND1" to END1. This way we are able to apply the `combine()` function.
+
+**Task**: Run the code.
+```{r "2_5"}
+#< task_notest
+
+inter.freq.dend1 = internet %>%
+  group_by(DEND1)%>%
+  summarise(percent=NROW(DEND1)/NROW(internet)*100)%>%
+  arrange(-percent)%>%
+  select(END1=DEND1, percent)
+
+inter.freq.dend1
+
+#>
+```
+We get a table with ten rows and two columns, listing the relative frequency distribution of the single dollar digit from the Internet data. For the single dollar digit, 9 is the most common ending (36.1%), followed by 4 (9.9%) and 5 (9.2%) (Levy et al., 2011).
+
+Now we want to plot the frequency distribution for the single-digit endings together in one histogram.
+
+**Task**: Uncomment the code. Fill the gaps with the right variables. Combine the tables for the Dominick's ("domi.freq.end1") and Internet data ("inter.freq.end1", "inter.freq.dend1" ) together with the command `combine()`. 
+```{r "2_6", table.max.rows=30}
+#< task_notest
+
+# freq1.long = gdata::combine(______, ______, ______, names=c("Dominick's","Internet Cent", "Internet Dollar"))
+# freq1.long
+
+#>
+freq1.long = gdata::combine(domi.freq.end1, inter.freq.end1,inter.freq.dend1, names=c("Dominick's","Internet Cent", "Internet Dollar"))
+
+freq1.long
+```
+As you can see, we gain three columns in our data describing the price endings, relative frequency, and the source. Now we will continue layering them in `ggplot()`. The aesthetic `fill()` takes different coloring scales for each different entry in a specified column. In our case, one color for Dominick's, one for the Internet cent digits and another color for the Internet dollar digits. The specification in the `geom_col()` bracket (position = "dodge") directly places the two bars for each source side by side (Wickham, 2016).
+
+**Task**: Run the code below.
+```{r "2_7", fig.width=15, fig.height=5}
+#< task_notest
+
+ggplot(freq1.long, aes(x=END1,y= percent, fill = source)) +               
+  geom_col(position = "dodge") +
+  labs(x="Price Ending", 
+       y="Relative Frequency", 
+       fill= "Data",
+       title="Frequency Distribution of the last Digit")+     
+  scale_x_continuous(breaks=(seq(0,9)))  
+
+#>
+```
+We get three histograms layered side by side with the single-digit price endings on the x-axis and the relative frequency on the y-axis. In this form, we can notice some significant differences. In the Dominick's data, the 9-ending is much more frequent. For the Internet cent endings, 0 and 5 are much more common in comparison to the other ending observations. The 9-ending is by far the most frequent ending over all three frequency observations (Levy et al., 2011).
+
+
+**Relative Frequency of the last two Digits**
+
+Next, we take a look at the last two cent digits in our data sets. With two digits we can have 100 possible outcomes. Therefore, we would expect a 1% distribution for each digit if the endings would be random (Levy et al., 2011). As you can see in the code chunk below, we already computed the frequency distribution for the double cent digits.
+
+**Task**: Run the code that computes the relative frequency for the double cent digits on the Internet and Dominick's data.
+```{r "2_8"}
+#< task_notest
+
+domi.freq.end2 = dominicks %>%
+  group_by(END2)%>%
+  summarise(percent=NROW(END2)/NROW(dominicks)*100)%>%
+  round(digits=2)%>%
+  arrange(-percent)
+
+inter.freq.end2 = internet %>%
+  group_by(END2)%>%
+  summarise(percent=NROW(END2)/NROW(internet)*100)%>%
+  round(digits=2)%>%
+  arrange(-percent)
+
+cbind(head(domi.freq.end2), head(inter.freq.end2))%>%
+  setNames(., c("Dominick's Cent Digits", "Frequency",
+                "Internet Cent Digits", "Frequency" ))
+#>
+```
+As you can see, we get two frequency tables for the double cent digits of the data sets. Next, we want to get the relative frequency distribution for the double dollar digits of the Internet data. Can you add the correct computation?
+
+**Task**: Compute the relative frequency for the double dollar endings from the Internet data ("internet"). Save the output in the variable "inter.freq.dend2". Show the first rows with `head()`.
+```{r "2_9"}
+
+inter.freq.dend2 = internet %>%
+  group_by(DEND2)%>%
+  summarise(percent=NROW(DEND2)/NROW(internet)*100)%>%
+  round(digits=2)%>%
+  arrange(-percent)
+
+head(inter.freq.dend2)
+
+```
+#< award "Frequency Expert"
+**"Congratulations!"** 
+You can compute the relative frequency for double price endings.
+#>
+
+Again with `ggplot`, we can visualize the frequency distributions in the form of histograms. For a better overview, we decided to plot each histogram separately under each other with the `grid.arrange()`-command from the package `gridExtra`. You can get additional information in the next info box.
+
+
+#< info "R-Function: grid.arrange()"
+
+**Function with important Arguments for Us**:
+```r
+grid.arrange(..., nrow)
+```
+Among other things, the function can arrange multiple "ggplots" on one page (Auguie, 2017). 
+
+- **"..."**: An object of the class `ggplot2` or `grob`.
+
+- **nrow**: Number of rows to align the objects under each other.
+
+For further information, you can have a look at the following site: https://cran.r-project.org/web/packages/gridExtra/gridExtra.pdf.
+
+#>
+
+**Task**: Run the code.
+```{r "2_10", fig.width=12, fig.height=10}
+#< task_notest
+
+gg.domi.end2 = ggplot(domi.freq.end2, aes(x=END2,y= percent)) +               
+  geom_col(position = "dodge") +
+  labs(x="Price Ending in Cents", y="", 
+       title="Frequency Distribution of the last two Digits in the Dominick's Data")+     
+  scale_x_continuous(breaks=c(0,seq(9,99, by=10)))
+
+gg.int.end2 = ggplot(inter.freq.end2, aes(x=END2,y= percent)) +               
+  geom_col(position = "dodge") +
+  labs(x="Price Ending in Cents", y="", 
+       title="Frequency Distribution of the last two Cent Digits in the Internet Data")+     
+  scale_x_continuous(breaks=c(0,seq(9,99, by=10)))
+
+gg.int.den2 = ggplot(inter.freq.dend2, aes(x=DEND2,y= percent)) +               
+  geom_col(position = "dodge") +
+  labs(x="Price Ending in Dollars", y="", 
+       title="Frequency Distribution of the last two Dollar Digits in the Internet Data")+     
+  scale_x_continuous(breaks=c(0,seq(9,99, by=10)))
+
+grid.arrange(gg.domi.end2, gg.int.end2, gg.int.den2, nrow=3)
+
+#>
+```
+We get three histograms aligned under each other. On the x-axis, we can observe the 100 different price endings. The y-axis contains the corresponding relative frequencies. If the prices were random, we would expect a 1% frequency distribution for each double-digit transition.
+
+We can observe a peak at each 9-ending for the Dominick's data. The most common double endings are 09, 19, 29, 39, 49, 59, 69, 79, 89 and 99 with 99 cents as the most common digit with a share over 15%. Because of the single-digit distribution of 9, we observed earlier this result does not seem surprising. In the Internet data, the highest peak and therefore, the leading digit is 99 with a probability of 26.7%. The next most frequent endings are 00 with 20.3%, 95 with 13.8% and 98 with 4.8%. For the last two dollar digits in the Internet data with nearly 10% 99 was the most used ending. Other notable endings are 19 and 49 with a relative frequency of approximately 5%. 
+
+
+**Scatter Plot**
+
+As the last exercise for this chapter, we want to compute the frequencies of the last three and four endings for the Internet data. For this purpose, we will make use of another kind of visualization, called scatter plot. A scatter plot is a diagram that uses cartesian coordinates to show two variables on x- and y-axis. A scatter plot includes data points for each observation. Scatter plots are often used in statistics to gain a first overview of the relationship between variables  (Utts, 2014). In our case, it will be useful for identifying variables with much higher frequencies than others.
+
+**Task**: Run the given code below.
+```{r "2_11", fig.width=15, figh.height=5}
+#< task_notest
+
+# compute relative frequency
+
+freq.int.3 = internet %>%
+  group_by(END3)%>%
+  summarise(freq=NROW(END3)/NROW(internet)*100)%>%
+  arrange(-freq)
+
+freq.int.4 = internet %>%
+  group_by(END4)%>%
+  summarise(freq=round(NROW(END4)/NROW(internet)*100, digits=2))%>%
+  arrange(-freq)
+
+# create scatter plot
+
+scatter.int.3 = ggplot(freq.int.3, aes(x=END3,y=freq, color=freq<=0.1)) +
+    geom_point()+ 
+  scale_x_continuous(breaks=seq(from=-0.01,to=9.99, by=1))+
+  labs(x="Price Ending in $", y="Relative Frequency", 
+       title="Scatter Plot: Frequency Distribution of the last 3 Dollar Digits")    
+
+scatter.int.4 = ggplot(freq.int.4,aes(x=END4,y=freq, color=freq<=0.1))+
+    geom_point()+ 
+    scale_x_continuous(breaks=seq(from=-0.01,to=99.99, by=10))+
+  labs(x="Price Ending in $", y="Relative Frequency", 
+       title="Scatter Plot: Frequency Distribution of the last 4 Dollar Digits")
+
+#>
+```
+First, we computed the relative frequency in the same fashion as before. After that, we created two scatter plots in `ggplot()` with `geom_point()` and plotted the frequencies. For the last three digits, we colored each data point in red, that had a higher frequency than a randomly distributed price ending (1%). For the last four digits, we colored each data point in red, that had a ten times higher frequency than a randomly distributed price ending (1%).
+
+In the next code chunk, we display the scatter plot together with the top six frequencies for the last three and four digits well-arranged. Again we make use of the command `grid.arrange()`.
+
+**Task**: Run the code.
+```{r "2_12", fig.width=12, figh.height=16}
+#< task_notest
+grid.arrange(tableGrob(round(head(freq.int.3), digits=2), rows=NULL), 
+             tableGrob(round(head(freq.int.4), digits=2), rows=NULL),
+             scatter.int.3,scatter.int.4,
+             layout_matrix=rbind(c(1,2),c(3,3),c(4,4)))
+#>
+```
+If the prices were random, we would expect a 0.1% frequency distribution for each of the last three digits. We notice that 9.99 is by far the most common ending (13.2%), followed by 9.00 (9.98%), 9.95 with 4.86%, 4.99 with 3.24% and 5.00 with 2.48%. For the last four digits, we would expect a 0.01% frequency distribution for each of the last four digits if the prices would be random. With 3.47%, 99.99 is the most common ending, followed by 99.00 with 3.46%. The next frequent endings are 19.99, 49.99 and 29.99 with 2.16%, 2.00%, and 1.55%. 
+
+### Summary of Chapter 2.
+
+
+**What We learned in this Chapter:**
+
+- Overall 9 was the most popular cent ending in both data sets.
+
+- 0- and 00-cent endings were more frequent in the Internet data than in the Dominick's data.
+
+- 9 and 99 were the most common dollar digits in the Internet data for the single and double dollar digit.
+
+- For the last three digits 9.99 and 9.00 were the most common endings.
+
+- For the last four digits 99.99 and 99.00 were the most common price endings.
+
+
+**What Skills You should have mastered in this Chapter:**
+
+- You can interpret the price ending variables in our data sets.
+
+- You can calculate the absolute and relative frequency of price endings with tools from the `dplyr` package.
+
+- You can create histograms and scatter plots with tools from the package `ggplot2`.
+
+- You can display tables and figures well arranged with the R-function `grid.arrange()`.
+
+<!--###################################################################################################################-->
+
+
+## Exercise 3.1 -- Transition Probability - Last Digit of a Price
+
+Now, that we have documented and visualized the frequency distribution of price endings, we will take a look at the **price ending transitions**. First, we will introduce a variable that indicates the event of a price change. Besides, we will define the term "dummy variable." After that, we will count the absolute number of transitions from one price ending to another. To compare the data sets with each other, we will apply the following two methods: first, we will divide the absolute frequency for each transition over the total number of all transitions (Levy et al., 2011). Second, we will calculate the transition probability for each price ending. 
+
+
+**Price Change**
+
+For this study, we only need data that includes a price change. To only keep the data that includes a price change, we can make use of the column "PCH" in both of the data sets. This binary variable indicates for each specific product type $i$ if the price in the last period $(t-1)$ differs from the price in the current period $(t)$.
+
+$\text{PCH} = 1,\quad \text{for } \quad \text{PRICE}_{i,t} \ne \text{PRICE}_{i,t-1}$
+
+$\text{PCH} = 0,\quad \text{otherwise}$
+
+The "**1**" states that there was a price change from the last to the current period and "**0**" states that there was no price change. This kind of variable is typically called "dummy." You can inform yourself about dummy variables in the info box below.
+
+
+#< info "Dummy Variable"
+
+In statistics, a dummy variable indicates the presence or absence of an event. The variable is binary and has therefore only two outcomes. The number "1" indicates the presence and "0" the absence of an effect (Draper and Smith, 2014). Dummy variables can be used for sorting data into mutually exclusive categories, for example:
+
+- male/female 
+
+- married/single
+
+- employed/unemployed
+
+#>
+
+
+Now, let us load the data with a price change.
+
+**Load the data sets**
+```{r "3_1_0"}
+#< task_notest
+
+dom = readRDS("dominicks.rds")%>%
+  filter(PCH==1)
+
+int = readRDS("Internet.rds")%>%
+  filter(PCH==1)
+
+#>
+```
+As you can see, we imported the data sets with `readRDS()`, filtered the data for all observations including a price change and saved the outcome in the variables "dom" and "int." For a start, let us calculate the total number of price changes, respectively transitions in both of these data sets.
+  
+**Task**: Calculate the total number of price changes/transitions for both data sets separately. Use the command `NROW()`.
+```{r "3_1_2"}
+
+NROW(dom)
+
+NROW(int)
+
+```
+In total, we have 435,115 price changes in the Dominick's data and 41,034 changes in the Internet data. In comparison to the total number of observations, around 11% of the observations in the Dominick's data ($3,875,378/435,115$) and around 1.5% of the observations in the Internet data ($2,656,283/41,034$) include a price change.
+
+
+### Absolute Frequency of Transitions
+
+Next, we will count the number of transitions from a price ending in the last period to a price ending in the current period. For this purpose, our data contains the additional columns "**Prv.End_**", which include the price ending from the previous period. We will show you how to count the number of transitions by the following example.
+
+
+![Frequency](example1.png)
+
+*Source: Own creation.*
+
+In this table, we have ten observations, respectively transitions where a price change has happened (PCH=1). We can observe a column for the current price (END1) and the previous price (Prv.End1) for the single cent ending. Now, we want to count the absolute frequency for each transition. As you can see, we have:
+
+- four times 9 to 9, 
+
+- two times 9 to 4,
+
+- two times 4 to 9,
+
+- one time 5 to 9 and 
+
+- one time 9 to 5. 
+
+Let us assume that these ten rows are all transitions. If we divide the absolute frequency for each transition by the total number of all transitions, we will get a percentage that enables a comparison with other observations or data sets. For our example, we could say that 40% of all transitions occur from 9 to 9, 20% from 4 to 9, 20% from 9 to 4, 10% from 5 to 9 and 10% from 9 to 5.
+
+At first, let us count the absolute frequency of each single-digit transition. The command `n()` from the `dplyr` package counts the number of observations in the current group (Wickham et al., 2018). For more information, you can click on the next info box. 
+
+
+#< info "R-Function: n()"
+
+**Function with important Arguments for Us**:
+```r
+n()
+```
+The function counts the number of observations specified in the `group_by()` command.
+
+For further information, you can visit: https://www.rdocumentation.org/packages/dplyr/versions/0.7.8/topics/n.
+#>
+
+
+### Single-Digit Transitions
+
+We will start counting the number of transitions for the single cent and dollar ending of the Internet data.
+
+**Task**: Run the code.
+```{r "3_1_3"}
+#< task_notest
+
+tra.int = int %>%
+  group_by(Prv.End1, END1) %>%
+  summarise(count=n()) %>%
+  ungroup() %>%
+  arrange(-count)
+
+tra.intd = int %>%
+  group_by(Prv.Dend1, DEND1) %>%
+  summarise(count=n()) %>%
+  ungroup() %>%
+  arrange(-count)
+
+#>
+```
+As you can see, we grouped the data sets by their current and previous endings at first. After that, we counted the number of observations within the `summarise()` function and saved them in the variable "count." Finally, we arranged the data in decreasing order regarding their absolute frequency.
+
+Next, we want to compute the absolute frequency for the single cent transitions in the Dominick's data.
+
+**Task**: In the same fashion as in the exercise above, compute the absolute frequency for each single cent transition of the Dominick's data. Save it in the variable "tra.dom." After that, uncomment the code below that returns a well-arranged table, that includes the absolute frequency for all three samples.
+```{r "3_1_4"}
+#< task_notest
+
+# tra.dom = ???
+
+# cbind(tra.dom, tra.int, tra.intd)%>%
+#  setNames(., c("Dominick's Prev End", "Dominick's Curr End", "Transitions",
+#                "Internet Prev End C", "Internet Curr End C","Transitions",
+#                "Internet Prev End $", "Internet Curr End $","Transitions"))%>%
+#  head(n=10)
+
+#>
+
+#< hint
+display("You can copy and paste the written code from tra.int and change it slightly.")
+#>
+
+tra.dom = dom %>% 
+  group_by(Prv.End1,END1) %>%
+  summarise(count=n()) %>%
+  ungroup() %>%
+  arrange(-count)
+
+ cbind(tra.dom, tra.int, tra.intd)%>%
+  setNames(., c("Dominick's Prev End", "Dominick's Curr End", "Transitions",
+                "Internet Prev End C", "Internet Curr End C","Transitions",
+                "Internet Prev End $", "Internet Curr End $","Transitions"))%>%
+  head(n=10)
+
+```
+#< award "Transition Trainee"
+**"Congratulations!"**
+You can compute the absolute frequency of transitions.
+#>
+
+We now have a table listing the top ten transitions for the single-digit endings on the Internet and Dominick's data. The most common transition in the Dominick's data is 9 to 9. Besides this preservation, there are no other rigid endings in its top ten. The top four endings in the Internet data preserve their original ending with 0 to 0 leading as the most common transition. For the dollar digit, there are six rigid price transitions in the top ten with 9 to 9 as the leading transition.  
+
+ 
+**Comparison of Single-Digit Transitions**
+
+To compare both data sets with each other, we will divide each transition frequency by the total number of all transitions. Rather than computing new transition tables, we will add a new column containing this value. The adding of columns can be done by applying the `mutate()` command from the `dplyr` package. You can get additional information in the following info box.
+
+#< info "R-Function: mutate()"
+
+**Function with important Arguments for Us**:
+```r
+mutate()
+```
+This command adds new columns to a data frame by preserving existing columns (Wickham et al., 2018). 
+
+For additional information, you can visit: https://www.rdocumentation.org/packages/dplyr/versions/0.5.0/topics/mutate.
+#>
+
+
+Now, let us compute the percentage for each single-digit transition.
+
+**Task**: Run the code.
+```{r "3_1_5"}
+#< task_notest
+
+tra.dom.all = tra.dom %>%
+  mutate(perc = count/sum(count)*100)%>%
+  select(Prv.End1,END1,perc)
+
+tra.int.all = tra.int %>%
+  mutate(perc = count/sum(count)*100)%>%
+   select(Prv.End1,END1,perc)
+
+tra.intd.all = tra.intd %>%
+  mutate(perc = count/sum(count)*100)%>%
+   select(Prv.Dend1,DEND1,perc)
+
+cbind(tra.dom.all, tra.int.all, tra.intd.all)%>%
+  setNames(., c("Dominick's Prev End", "Dominick's Curr End", "Percentage",
+                "Internet Prev End C", "Internet Curr End C","Percentage",
+                "Internet Prev End $", "Internet Curr End $","Percentage"))%>%
+  round(digits=2)%>%
+  head(n=10)
+
+#>
+```
+Within the `mutate()` function, we divided the absolute frequency of each transition ("count") by the total number of all transitions and saved it in the variable "perc." After that, we combined the tables and displayed them well-arranged.
+
+We now have the top ten transitions in terms of their percentage. If the prices after a price change were random, we would expect a 1% distribution for each of the 100 possible transitions (Levy et al., 2011).In the Dominick's data, a rigid 9-ending occurs in 26.93% of all observations, followed by the 5 to 9 transition with 4.45% and 9 to 5 with 4.37%. For the cent digits in the Internet data set, a rigid  0-ending occurs in 20.35% of all observations, followed by a rigid 9-ending in 17.72% of all transitions. The sticky 5-ending is with 10.64% the third highest transition. Concentrating on the single dollar digit for the Internet data, we notice that the 9 to 9 transition has with 11.78% by far the highest percentage. For the Internet data, this could imply an increase in the popularity of a sticky 9-ending as we move from the cent to the dollar digit (Levy et al., 2011).
+
+
+**Quiz 6: Comparison of Transitions**
+
+#< quiz "Comparison of Transitions"
+parts:
+  - question: 1. What seems to be the most significant commonality for the three observations?
+    choices:
+        - The percentage for a 9 to 9 transition is over 10%*
+        - The 9 to 9 transition is the most frequent one 
+    multiple: FALSE
+    success: Great, this is correct.
+    failure: Try again.
+  - question: 2. What seems to be the most significant difference for the three observations?
+    choices:
+        - The frequency of a rigid 9 transition
+        - The frequency of a rigid 0 transition*
+    multiple: FALSE
+    success: Great! This is correct! 
+    failure: Try again.
+    
+#>
+
+
+#< award "Transition Theorist"
+**"Congratulations!"**
+You can point out the most significant differences and commonalities of a transition table.
+#>
+
+
+### Transition Probability
+
+Next, we will compute the transition probability for each single price ending. In our case, a transition probability will be the probability of a $\text{price-ending}_\text{j}$ to change to a $\text{price-ending}_\text{i}$ (Williams and Heaps, 2014). To compute the transition probability to a $\text{price-ending}_\text{i}$, we need to divide its absolute transition frequency by the total number of all transitions for a $\text{price-ending}_\text{j}$.
+
+Let us start calculating the transition probability.
+
+**Task**: Run the code.
+```{r "3_1_6", fig.width=15, fig.height=5}
+#< task_notest
+
+tra.int.each = tra.int %>%
+  group_by(Prv.End1) %>%
+  mutate(prob = count/sum(count)*100)%>%
+  ungroup() %>%
+  arrange(END1,Prv.End1)
+
+tra.intd.each = tra.intd %>%
+  group_by(Prv.Dend1) %>%
+  mutate(prob = count/sum(count)*100)%>%
+  ungroup() %>%
+  arrange(DEND1,Prv.Dend1)
+
+tra.dom.each = tra.dom %>%
+  group_by(Prv.End1) %>%
+  mutate(prob = count/sum(count)*100)%>%
+  ungroup() %>%
+  arrange(END1,Prv.End1)
+
+#>
+```
+First, we grouped the data by their previous ending ($\text{price-ending}_\text{j}$). Within the `mutate()` function we divided the absolute frequency ("count") for each $\text{price-ending}_\text{i}$ by the total number of all transitions for the previous ending and saved the result in the new column "prob." Next, we want to observe these probabilities within a particular form of a matrix.
+
+
+### Visualization as Heat Map
+
+An excellent tool to visualize our transition probabilities is a so-called "heat map." A heat map is a graphical illustration of data in matrix form that represents individual values as colors (Wilkinson and Friendly, 2009). To create these heat maps, we will make use of the tools from the `ggplot2`-package. You can inform yourself about the  `ggplot2` commands we need for creating the heat maps, in the info box below.
+
+
+#< info "Code Description: Heat Map with ggplot2"
+
+- **geom_tile()**: The function tiles a plane with rectangles.
+
+- **geom_text()**: The function enables textual annotation. In our case the transition probabilities within the rectangles.
+
+- **scale_colour_gradient()**: The function creates a colour gradient.
+
+For additional information, you can visit: https://cran.r-project.org/web/packages/ggplot2/ggplot2.pdf.
+
+#>
+
+Now, let us create the heat maps for the transition probabilities.
+
+**Task**: Run the code.
+```{r "3_1_7", fig.width=8, fig.height=12}
+#< task_notest
+
+breaks = c(0,2,5,10,13,18,23,35,45,60,100)
+
+hm.int.c= ggplot(tra.int.each, aes(x=END1, y=-Prv.End1))+
+          geom_tile(aes(fill = prob)) + 
+          geom_text(aes(label = round(prob, 2))) +
+          scale_fill_gradient(low = "white", high = "blue",breaks = breaks)+
+    scale_x_continuous(breaks= seq(0,9)) +
+    scale_y_continuous(breaks= seq(0,-9), labels =seq(0,9))+
+    labs(title="Heat Map: Internet Cent Digit")
+
+hm.int.d= ggplot(tra.intd.each, aes(x=DEND1, y=-Prv.Dend1))+
+          geom_tile(aes(fill = prob)) + 
+          geom_text(aes(label = round(prob, 2))) +
+          scale_fill_gradient(low = "white", high = "blue",breaks = breaks)+
+    scale_x_continuous(breaks= seq(0,9)) +
+    scale_y_continuous(breaks= seq(0,-9), labels =seq(0,9))+
+    labs(title="Heat Map: Internet Dollar Digit")
+
+hm.dom= ggplot(tra.dom.each, aes(x=END1, y=-Prv.End1))+
+          geom_tile(aes(fill = prob)) + 
+          geom_text(aes(label = round(prob, 2))) +
+          scale_fill_gradient(low = "white", high = "blue",breaks = breaks)+
+    scale_x_continuous(breaks= seq(0,9)) +
+    scale_y_continuous(breaks= seq(0,-9), labels =seq(0,9))+
+    labs(title="Heat Map: Dominick's Cent Digit")
+
+
+grid.arrange(hm.int.c, hm.int.d, hm.dom, nrow=3)
+#>
+```
+At first, we declared the transition probability into our `fill` argument with specified breaks at certain percentage points. Then we tiled a white plane including rectangles with the `ggplot2` command `geom_tile()`. After that, we used the command `scale_fill_gradient()` to specify our own set of mappings towards the color values. You are already familiar with the remaining commands which defined the x- and y-axis and labeled our plots. 
+
+As you can see, we get three 10x10 matrices including the transition probability from each previous ending to a current ending. The heat map is colored in shades of blue. A light color indicates a low and a dark color a high transition probability. For the transitions of the single cent digits in the Internet data, the rigid 0-, 5- and 9-endings have the largest probabilities. The dollar transitions of the Internet data show patterns that imply high price ending rigidity,  as well as a high probability of changing to a 9-ending. For the Dominick's data, the transition to a 9-ending is by far the most popular transition for each price ending, followed by the transition to a 5-ending.
+
+In the next chapter, we will focus on the transitions of double-digit price endings.
+
+<!--##############################################################################################################################-->
+
+## Exercise 3.2 -- Transition Probability - Last two Digits of a Price
+
+In this chapter, we want to focus on the double-digit transitions. Like in chapter 3.1, we will divide the absolute frequency for each transition by the total number of all transitions and will calculate the transition probability to enable comparison between the data sets. Furthermore, we will split the Internet data into two sub-groups and analyze their price ending transitions.
+
+**Load the data sets** 
+```{r "3_2_0"}
+#< task_notest
+int = readRDS("Internet.rds")%>%
+  filter(PCH==1)
+dom = readRDS("dominicks.rds")%>%
+  filter(PCH==1)
+#>
+```
+In the paragraph below, we already computed the absolute transition frequency, as well as their percentage for the double cent digits in both data sets. Just run the code chunk below.
+
+**Task**: Run the code.
+```{r "3_2_1"}
+#< task_notest
+
+tra.dom.2 = dom %>%
+  group_by(Prv.End2, END2) %>%
+  summarise(count=n(), perc=n()/NROW(dom)*100) %>%
+  ungroup() %>%
+  arrange(-perc)
+
+tra.int.2 = int %>%
+  group_by(Prv.End2, END2) %>%
+  summarise(count=n(), perc=n()/NROW(int)*100) %>%
+  ungroup() %>%
+  arrange(-perc)
+
+#>
+```
+In the same fashion as for the single price endings in chapter 3.1, we grouped the data by their previous and current end. Within the `summarise()` function, we calculated the absolute frequency for each transition, as well as their percentage in comparison to all transitions.
+
+Now, we want to calculate the absolute transition frequency and percentage for the dollar endings of the internet data.
+
+**Task**: For the double dollar digits of the Internet data, compute the absolute transition frequency and their percentage. Arrange the result in decreasing order regarding their percentage. Save the output in the variable "tra.int.2.d"! Uncomment the remaining code.
+```{r "3_2_2"}
+#< task_notest
+
+# tra.intd.2 = ???
+
+# cbind(head(tra.dom.2, n=10),head(tra.int.2,n=10), head(tra.intd.2, n=10))%>%
+#   round(digits=2)%>%
+#   setNames(., c("Dom Prev", "Dom Curr", "Freq", "Percent",
+#                 "Int Prev C", "Int Curr C", "Freq", "Percent",
+#                 "Int Prev $", "Int Curr $", "Freq", "Percent"))
+
+#>
+
+#< hint
+display("You can copy and paste most of the written code from tra.int.2 and change it slightly.")
+#>
+
+tra.intd.2 = int %>%
+  group_by(Prv.Dend2, DEND2) %>%
+  summarise(count=n(), perc=n()/NROW(int)*100) %>%
+  ungroup() %>%
+  arrange(-perc)
+
+cbind(head(tra.dom.2, n=10),head(tra.int.2,n=10), head(tra.intd.2, n=10))%>%
+  round(digits=2)%>%
+   setNames(., c("Dom Prev", "Dom Curr", "Freq", "Percent",
+                 "Int Prev C", "Int Curr C", "Freq", "Percent",
+                 "Int Prev $", "Int Curr $", "Freq", "Percent"))
+
+```
+Once again, we combined the tables and displayed them well arranged with the R-functions `cbind()`, `round()` and `setNames()`. 
+
+For the last two digits, we have 100 different price endings. Therefore there can be 1000 different outcomes from the current to the next ending.  If the prices were random, we would expect a 0.1% distribution for each transition (Levy et al., 2011).
+
+In the Dominick's data, 89 to 99 is the highest transition with around 1%, followed by 99 to 89 and 99 to 95 with around 0.8% and 0.7%. There are no rigid price transitions in the top 10. For the penny digit, 00 to 00 is the highest transition in the Internet data with approximately 18.63%, followed by 99 to 99 with 11.89% and 95 to 95 with 8.83%. There are four rigid price endings in the top ten. For the double-digit dollar transitions, 14 to 14 with 1.47%, 11 to 11 with 1.36% and 15 to 15 with 1.28% were the highest. Except for one end, every dollar transition in the top ten is rigid.
+
+
+**Quiz 7: Comparison of the Internet Transitions**
+
+#< quiz "Comparison of the Internet Transitions"
+parts:
+  - question: 1. When we observe the top ten transitions of the dollar endings, what stands out the most?
+    choices:
+        - Most of the top ten transitions are in the range from 90 to 99
+        - Most of the top ten transitions are in the range from 20 to 29
+        - Most of the top ten transitions are in the range from 10 to 19*
+    multiple: FALSE
+    success: Great, this is correct.
+    failure: Try again.
+  - question: 2. What could be a reason behind these findings, that the original authors suspected?
+    choices:
+        - The pricing decision of companies for electronic goods
+        - Low priced product categories within the Internet data set*
+    multiple: FALSE
+    success: Great, this is correct.
+    failure: Try again.
+    
+#>
+
+#< award "Clairvoyant Rank 2"
+**"Congratulations!"** 
+Once again, you guessed right regarding the assumptions from Levy et al. (2011).
+#>
+
+
+### Grouping by Product Category
+
+To further check the assumptions from Levy et al. (2011), we will observe the popularity of all transitions by each product category and visualize the findings. We just need to add a third grouping variable to gain the desired variables.
+
+**Task**: Uncomment the code. Fill the gap with the right grouping variable.
+```{r "3_2_3"} 
+#< task_notest
+
+# tra.int.d.prodcat = int%>%
+#   group_by(Prv.Dend2, DEND2, ______) %>%
+#   summarise(perc=n()/NROW(int)*100)
+
+# tra.int.d.prodcat %>%
+#   group_by(PRODCAT)%>%
+#   filter(perc == max(perc))%>%
+#   mutate(perc=round(perc,2))%>%
+#   select(PRODCAT, Prv.Dend2,DEND2,Percentage=perc)
+
+#>
+
+tra.int.d.prodcat = int%>%
+  group_by(Prv.Dend2, DEND2, PRODCAT) %>%
+  summarise(perc=n()/NROW(int)*100)
+
+tra.int.d.prodcat %>%
+  group_by(PRODCAT)%>%
+  filter(perc == max(perc))%>%
+  mutate(perc=round(perc,2))%>%
+  select(PRODCAT, Prv.Dend2,DEND2,Percentage=perc)
+
+```
+
+The already written code returns the most frequent transition for each product category. In this first small overview, we notice three categories with top transitions in a price range between  11 an 29 and seven transitions in a price range between 79 and 99. To further observe the findings, we will now visualize the data.
+
+
+**3-Dimensional Plot**
+
+We want to further observe this behavior by creating a three dimensional scatter plot. On the x- and y-axis we will scale the previous and current dollar endings. On the z-axis, we will scale the percentage of the transition. Besides, we will color the product categories for each transition. In the code chunk below you can see how we plotted this 3-dimensional scatter plot with the function `plot_ly()` from the correspondent package `plotly` (Sievert, 2018). You can get additional information in the following info box.
+
+
+#< info "R-Package: plotly()"
+
+**Function with important Arguments for Us**:
+```r
+plot_ly(x,y,z,color)
+```
+Among other things, this command can initiate a three-dimensional plot (Sievert, 2018).
+
+-**x,y,z**: Arguments that shall be mapped on the x-, y-, or z-axis.
+
+-**color**: Attribute that indicates which Values shall be colored differently.
+
+For further information, you can have a look at the following site: https://plotly-book.cpsievert.me.
+
+#>
+
+**Task**: Run the code to create a 3-dimensional scatter plot with separated data points for each product category.
+```{r "3_2_4", output="htmlwidget", widget="plotly"} 
+#< task_notest
+
+plot_ly(tra.int.d.prodcat, x = ~DEND2, y = ~Prv.Dend2, z = ~perc, color = ~PRODCAT) %>%
+  add_markers() %>%
+  layout(scene = list(xaxis = list(title = 'Current End'),
+                      yaxis = list(title = 'Previous End'),
+                      zaxis = list(title = 'Relative Frequency of the Transition')))
+
+#>
+```
+We now have a 3-dimensional scatter plot with different colored data points for each product category. You may notice that there are three categories with a high transition frequency within the lower price ending range. These categories are CDs (*in green*), DVDs (*in purple*) and video games (*in grey*).
+
+
+**Sub-Samples**
+
+Based on these findings, we want to split the Internet data into two sub-samples. One sample shall contain the lower priced product categories (CDs, DVDs and video games) and the other one the higher priced product categories. To create these sub-samples, we can apply the `filter()` function on the data. To filter for more than one category, we will work with the `%in%`-operator! This operator returns a logical vector indicating whether there is a match or not in the given column (R Core Team, 2018). You can find additional information in the info box below.
+
+
+#< info "Value Matching with %in%"
+
+**Function with important Arguments for Us**:
+```r
+x %in% c()
+```
+The operator returns a logical vector indicating if there is a match or not for its left operand.
+
+- **x**: Values where the operator shall search for a match. An "*!*" symbol before the argument indicates to search for not matching values.
+
+- **c**: A vector containing the values to be matched against.
+
+For more information, you can visit: https://stat.ethz.ch/R-manual/R-devel/library/base/html/match.html.
+
+#>
+
+Now, let us create the sub-samples.
+
+**Task**: Uncomment the code. Fill both gaps with the right matching operator:
+- *%in%*
+- *==*
+- *~*
+```{r "3_2_5"} 
+#< task_notest  
+
+# int.low = int %>%
+#   filter(PRODCAT____c("Music CDs","Movie DVDs","Video Games"))
+
+# int.high = int %>%
+#   filter(!PRODCAT____c("Music CDs","Movie DVDs","Video Games"))
+
+#>
+
+int.low = int %>%
+  filter(PRODCAT%in%c("Music CDs","Movie DVDs","Video Games"))
+
+int.high = int %>%
+  filter(!PRODCAT%in%c("Music CDs","Movie DVDs","Video Games"))
+
+```
+#< award "A perfect Match!"
+**"Congratulations!"** 
+You can filter data by more than one matching value with the `%in%` operator.
+#>
+
+As you can see, we get the grouped data sets. The data set "int.low" contains the lower and the data set "int.high" contains the higher priced product categories.
+
+
+**Number of Transitions within the Sub-Samples**
+
+Now that we have the two sub-samples, we want to continue our transition study. At first, we are interested in the percentage of transitions.
+
+**Task**: Run the code.
+```{r "3_2_6"} 
+#< task_notest
+
+tra.int.low = int.low %>%
+  group_by(Prv.Dend2, DEND2) %>%
+  summarise(count=n(), perc=n()/NROW(int)*100) %>%
+  ungroup() %>%
+  arrange(-perc)
+
+tra.int.high = int.high %>%
+  group_by(Prv.Dend2, DEND2) %>%
+  summarise(count=n(), perc=n()/NROW(int)*100) %>%
+  ungroup() %>%
+  arrange(-perc)
+
+cbind(head(tra.intd.2,n=10), head(tra.int.low, n=10), head(tra.int.high, n=10))%>% 
+setNames(., c("Int Prev", "Int Curr", "Freq", "Percent",
+              "Int.L Prev", "Int.L Curr","Freq","Percent",
+              "Int.H Prev", "Int.H Curr","Freq", "Percent"))%>%
+  round(digits=2)
+
+#>
+```
+As you can see, we get a table with nine columns and ten rows. The first three columns show the top transitions of the complete Internet data. The next three columns the top transitions regarding the low priced product categories. The last three columns include the top transitions for the higher priced products. By comparing both data sets with the original,  we notice more similar patterns with the lower priced sample. Levy et al. (2011) suspect a reason for this stronger impact in the fact that nearly all cheaper products rather change their cent digits than their dollar digits in the event of a price change.
+
+
+### Transition Probability for Double-Digit Endings
+
+Like we did for the single price endings, we will now compute the transition probability for the double-digit endings. For the Dominick's data, we will focus on the cent digits. For the Internet data, we will focus on the cent digits for the lower priced product categories and on the dollar digits for the higher priced products.
+
+**Task**: Run the code.
+```{r "3_2_7"}
+#< task_notest
+
+tra.prob.dom2 = tra.dom.2 %>%
+  group_by(Prv.End2)%>%
+  mutate(prob=count/sum(count)*100)%>%
+  ungroup()%>%
+  arrange(-prob)%>%
+  select(Dom.Prev=Prv.End2, Dom.Curr=END2, Tra.Prob=prob)
+
+tra.int.high.d = tra.int.high %>%
+  group_by(Prv.Dend2)%>%
+  mutate(prob=count/sum(count)*100)%>%
+  ungroup()%>%
+  arrange(-prob)%>%
+  select(Int.Doll.Prev=Prv.Dend2, Int.Doll.Curr=DEND2, Tra.Prob=prob)
+
+tra.int.low.c = int.low %>%
+  group_by(Prv.End2, END2) %>%
+  summarise(count=n())%>%
+  ungroup() %>%
+  group_by(Prv.End2)%>%
+  mutate(prob=count/sum(count)*100)%>%
+  ungroup()%>%
+  arrange(-prob)%>%
+  select(Int.Cent.Prev=Prv.End2, Int.Cent.Curr=END2, Tra.Prob=prob)
+
+cbind(head(tra.prob.dom2, n=10),head(tra.int.low.c,n=10), head(tra.int.high.d, n=10))%>%
+round(digits=2)
+
+#>
+```
+We get the top 10 highest transition probabilities for the given samples. For the Dominick's data in seven cases out of the top ten, a transition to 99 can be observed. For the high priced Internet sample we can observe a change to 99 four times in the top ten. For the lower priced sample of the Internet data, we can see a transition to 99 four times. 
+
+
+### Summary of Chapter 3.
+
+**What We learned in this Chapter:**
+
+- Over both data sets, 9 and 99 were the most rigid price endings.
+
+- The 9-cent ending is the most persistent ending in the Dominick's data.
+
+- The 0 to 0 transition is the most popular single digit transition in the Internet data.
+
+- The change to a 9-ending has the largest transition probability in the Dominick's data.
+
+- The popularity of a change to a 9, respectively and their preservation seems to have a connection to the price range.
+
+
+**What Skills You should have mastered in this Chapter:**
+
+- You can count the number of observations for each group with the `n()` function.
+
+- You can compute the transition probability with the tools of `dplyr`.
+
+- You can visualize a heat map with the tools from the `ggplot2` package.
+
+- You can compute a 3-dimensional plot with `plotly()`.
+
+- You know how to create sub-samples with the `filter()` function and the `%in%` operator.
+
+
+<!--##############################################################################################################################-->
+
+## Exercise 4.1 -- Probability of a Price Change - Introduction
+
+In the last chapter, we learned something about the different transition probabilities and frequencies for the **endings** of a price. Now we want to focus on the **stickiness of a price as a whole**. We want to check if there are any notable differences regarding the price ending and the probability of a price to change. To perform this task, we will estimate price changing probabilities ("odds ratios") for 9- and non-9-ending prices with a binomial logit model (Levy et al., 2011).
+
+At first, we will introduce the dependent and independent variables we will use for the logit model. Then we will give an example for the so-called "maximum likelihood method" that estimates our coefficient parameters. Next, we will explain how to interpret these parameters with odds ratios. After you are familiar with these basics, we will run the regressions with the actual data sets and interpret the summary outputs with various alternatives in chapter 4.2. Last but not least, we will refine the model by product-specific variables (Levy et al., 2011).
+
+To estimate the price changing probabilities with a logistic regression we need to specify the variables for the model at first.
+
+**Task**: Run the code to get an overview of the essential variables for this chapter.
+```{r "4_0"}
+#< task_notest
+
+readRDS("Internet.rds")%>%
+  select(PRICE, PCH, Prv.End9, Prv.End99, Prv.EndD9, Prv.EndD99, Prv.End999, Prv.End9999)%>%
+  head()
+
+#>
+```
+
+**Variables for Logistic Regression - Dependent Variable**
+
+First, we need a dependent variable *"y"* we want to estimate. In our case, this variable will be the dummy variable for a price change **PCH**, which we explained in chapter 3. Remember that this is a binary variable with two outcomes:
+
+- **1**: "a price change has happened" and 
+- **0**: "there was no price change."
+
+
+**Variables for Logistic Regression - Explanatory Variables (Predictors)**
+
+Second, for estimating the dependent variable we need some explanatory variables (predictors) that are supposed to describe our dependent variable. For a start, we will only include one of these variables in our model. The first predictor we will include is a dummy variable indicating whether the price ending in the previous period includes a 9 or not. Depending on the number of digits we want to observe, we will run a regression including **one** of the following dummies:
+
+- **Prv.End9**: equals 1 for a previous 9-cent ending, 0 otherwise.
+- **Prv.End99**: equals 1 for a previous 99 cent ending, 0 otherwise.
+- **Prv.EndD9**: equals 1 for a previous 9 dollar ending, 0 otherwise.
+- **Prv.EndD99**: equals 1 for a previous 99 dollar ending, 0 otherwise.
+- **Prv.End999**: equals 1 for a previous 9.99 ending, 0 otherwise.
+- **Prv.End9999**: equals 1 for a previous 99.99 ending, 0 otherwise.
+
+
+**Basic Equation**
+
+Now that you know the variables, let us continue with the basic logit model. First, we want to estimate the log odds of a price change (*PCH=1*) with a single predictor $x$ (*Prv.End_9*). We will explain the meaning behind the log odds in a later paragraph. With the event probability $p_i(x)=P(Y=1|X=x)$ for the occurrence of the event ("price change"), we gain the following logistic regression model (Erhardt, 2009):
+
+$$log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 \cdot x $$
+
+With $\beta_0$ being the log odds for a price change when $x=0$ ("intercept") and $\beta_0+\beta_1$ being the log odds for a price change when $x=1$. 
+
+Now we want to estimate the parameters $\beta_0$ and $\beta_1$ that can describe this model best. One alternative for getting the best estimates is to run a logistic regression with an already implemented R-function. For example, the `glm()` function from the `stats()` package can fit logistic models, like in our case (R Core Team, 2018). We will explain the function in chapter 4.2. For a start, we are only interested in the estimated coefficient from this function.
+
+For a start, let us work with the following example data.
+
+**Task**: Run the code chunk.
+```{r "4_1"}
+#< task_notest
+
+set.seed(12345)
+
+example1=data.frame(PCH=rbinom(100, 1,0.3), Prv.End9=rbinom(100, 1,0.5))
+
+table(example1)
+
+#>
+```
+As you can see, we get a table describing the content of the data frame "example1" we created. Both columns include randomly binomialy distributed values (*0's and 1's*) created by the function `rbinom()`. With the command `set.seed()` we make sure that you get the same binomialy distributed values (R-Core Team, 2018). For further information about the new R-commands, you can open the next info box.
+
+#< info "R-Functions: set.seed() and rbinom()"
+
+- **set.seed()**: The function sets a seed for a random number generator. The same seed will ensure the same sequence of "random" numbers (R-Core Team, 2018). You can get additional information here: https://stat.ethz.ch/R-manual/R-devel/library/base/html/Random.html.
+
+- **rbinom()**: The function generates random binomial distributed parameters (R-Core Team, 2018). You can get additional information here: https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Binomial.html.
+
+#>
+
+In total, we have 100 observations. For 60 observations with a 9-ending price, we observe a price change 20 times. The other 40 observations with non-9-ending prices include 15 price changes. Next, we will run a logistic regression with `glm()` and the example data.
+
+**Task**: With the observation from the example data run the logistic regression. Fill the gaps with the right dependent and independent variable.
+```{r "4_2"}
+#< task_notest
+
+# formu.glm = glm(___ ~ ___, family = binomial(link = "logit"), data = example1 )
+
+# coef(formu.glm)
+
+#>
+formu.glm = glm(PCH ~ Prv.End9, family = binomial(link = "logit"), data = example1)
+
+coef(formu.glm)
+```
+
+With the R-function `coef()` we can extract the estimated optimal parameters for our example observations (R Core Team, 2018). In the example, the parameter for the intercept $\beta_0$ is around -0.51 and the parameter for the predictor $\beta_1$ is around -0.18. Now we want to estimate these best fitting parameters by ourselves. This way we can introduce you to the methods of coefficient estimation for binomial logistic regression. To search for the optimal parameters, we will make use of the "maximum likelihood (ML) method". In the next paragraph, we will explain the idea behind the ML method. 
+
+
+### Maximum Likelihood Estimation
+
+The goal of this method is to search for the optimal parameter values ($\beta_0, \beta_1,\cdots, \beta_n$) for fitting a distribution of already observed data. In other words, we search for the parameters with the highest likelihood where our likelihood function will have its maximum.
+
+For the basic model with $n$ observations and probability $p_i$ for the realized value $y_i=1$ and probability $(1-p_i)$ for the realized value $y_i=0$ we gain the following likelihood function (Erhardt, 2009): 
+$$
+L=\prod_{i=1}^np_i^{y_i}{1-p_i}^{(1-y_i)}
+$$
+
+Since it is easier to work with addition than with multiplication, we apply the natural logarithm on the likelihood function. As a result of the logarithm of a function reaching its maximum value at the same point as the function itself, this is possible (Zivot, 2012). We get the following equation:
+
+$$
+\log(L)=\ell(\beta)=\sum_{i=1}^n\left[y_i\log(p_i)+(1-y_i)\log(1-p_i)\right]
+$$
+
+We can rewrite the logistic model in the following way:
+
+$$
+log\left(\frac{p_i}{1-p_i}\right) =\beta_0+\beta_1x_{i1}+\cdots+\beta_rx_{ir}= \beta^T x_i
+$$
+By solving the logistic model for $p_i$, we get:
+
+$$
+p_i=\frac{\exp(\beta^Tx_i)}{1+\exp(\beta^Tx_i)}
+$$
+
+By inserting $p_i$ into the log-likelihood function we get the following equation:
+
+$$
+\ell(\beta)=\sum_{i=1}^n\left[y_i\boldsymbol{\beta}^T\mathbf{x}_{i*}-\log\left(1+\exp(\boldsymbol{\beta}^T\mathbf{x}_{i*}\right)\right]\
+$$
+
+With this function, we can calculate the log-likelihood for a given parameter $\beta$. Next, we need a method that can search for the parameter $\beta$ were the function reaches its maximum (*highest log-likelihood*).
+
+
+### The Newton Raphson Algorithm
+
+One iterative method for getting the parameter with the highest likelihood is the Newton-Rhapson method. In general Newton's method tries to find the stationary points of a function $f()$ and therefore the roots of the derived function $f'()$. 
+
+The process starts with guessed initial values of $\beta$. For each iteration, these $\beta$-values will be "updated" by the function below and ideally further converge to their optimal parameter value $\beta^*$ that satisfies $f'(\beta^*)=0$ (Givens and Hoeting, 2012). In our cases, $\beta^*$ will be the estimate for the maximum of the log-likelihood function. It can be proven that a parameter converges to the value where the equation $f'(\beta^*)=0$ is satisfied if the function is twice-differentiable and fulfills other technical conditions (Bubeck, 2015).
+
+$$
+\boldsymbol{\beta}_{i+1}=\boldsymbol{\beta}_{i}-\left(\frac{\partial^2\ell_i}{\partial\beta^2}\right)^{-1}\frac{\partial\ell_i}{\partial\beta}
+$$
+By rewriting the log-likelihood function in vector notation and derivating the function twice, we can write the updated equation in the following way:
+
+$$
+\boldsymbol{\beta}_{i+1}=\boldsymbol{\beta}_{i}+\left(X^TWX\right)^{-1}X^T(y-p)
+$$
+
+with $X=\left[x_{*0},x_{*1},x_{*2},\cdots,x_{*m}\right]$ as a design matrix containing the realized values of all independent variables as well as the intercept in vector notation and $W$ being a *nxn*- diagonal probability matrix with $W_{ii} = p_{i}(1-p_{i})$ (Erhardt, 2009).
+
+### R-Function: Maximum Likelihood with Newton-Rhapson
+
+Now that we know how to calculate the log-likelihood and have a method that can find the parameter where the function reaches its maximum, we will solve our own logistic regression. As a first exercise, we will conduct one iteration of the Newton-Rhapson method by hand. Once again we will work with our example data "example1". We will start by setting initial values for $\beta$.
+
+**Task**: Set start values for $\beta_0$ and $\beta_1$. Save in the variable "beta" a vector including the values 0,0.
+```{r "4_3"}
+#< task_notest
+
+#start values for beta0 and beta1
+
+#>
+
+beta= c(0,0)
+```
+Next, we want to create a vector "y" containing the dependent variable "PCH" and a design matrix "X" containing a vector of 1's for the intercept and the predictor "Prv.End9".
+
+**Task**: Do the following two tasks with the data from "example1". First, save in the variable "y" the realized values of our dependent variable ("PCH"). Second with the R-command `cbind()` create a design matrix "X" that contains a vector of 1's and a vector for the predictor "Prv.End9" from "example1". Reference both values with the "$"-notation. Show both variables with the command `head()`.
+```{r "4_4"}
+#< task_notest
+
+# compute the binary dependent variable y
+
+# compute the design matrix X 
+
+#>
+
+y=example1$PCH
+
+X=cbind(1,example1$Prv.End9)
+
+head(y)
+head(X)
+```
+Now that we have our initial values and observations in y and X we can start by calculating the probability for a "success" (PCH=1) **p** and the diagonal matrix **W** with the equations we explained above. Note that the `%*%` operator enables matrix multiplication in R (R Core Team, 2018).
+
+**Task**: Run the code below.
+```{r "4_5"}
+#< task_notest
+
+# Calculate probability 
+p = as.vector((exp(X%*%beta)/(1+ exp(X%*%beta))))
+head(p)
+
+# Calculate diagonal matrix 
+W = diag(p*(1-p)) 
+
+W[1:10, 1:10]
+
+#>
+```
+Next, we need to compute the updated values for $\beta$ and insert them into the updated-function.
+
+
+**Task**: Compute the first approximation of beta by the Newton-Rhapson method. Replace the "?"-symbols with the right variables.
+```{r "4_6"}
+#< task_notest
+
+# update = solve(t(X) %*% ? %*% X) %*% t(X) %*% (y - ?)
+
+# beta_new = beta + ???
+
+# beta_new
+
+#>
+
+update = solve(t(X)%*%W%*%X) %*% t(X)%*%(y - p)
+
+beta_new = beta + update
+
+beta_new
+
+```
+We obtain a value for $\beta_0$ around -0.50 and for $\beta_1$ around -0.17 for the first iteration. Remember that the best fitting parameters from the `glm()` function were -0.51 ($\beta_0$) and -0.18 ($\beta_1$). Now let us write a function that performs these tasks.
+
+#< award "First Iteration"
+**"Congratulations!"** 
+You performed the first approximation for *beta_star* by the Newton-Rhapson method.
+#>
+
+
+### R-Function log.lik.solve()
+
+Next, we will introduce the function "log.lik.solve()" that performs the maximum likelihood estimation with the Newton-Rhapson method. The function takes a vector "y" and matrix "X" and returns the optimal parameters in a vector "beta."
+
+**Task**: Run the function "log.lik.solve."
+```{r "4_7"}
+#< task_notest
+log.lik.solve = function(y,X,thres = 1e-10, max.iter = 100, beta = rep(0,times=NCOL(X))){
+
+  diff = 10000 
+  iter = 0
+
+  while(diff > thres ){
+    p = as.vector(exp(X%*%beta) / (1+exp(X%*%beta)))
+    W =  diag(p*(1-p)) 
+    update = solve(t(X)%*%W%*%X) %*% t(X)%*%(y - p)
+    beta = beta + update
+    diff = sum(update^2)
+    iter = iter + 1
+    
+    if(iter > max.iter) {
+      stop("Not converging!")
+    }
+  }
+  return(beta)
+}
+
+#>
+```
+Let us shortly explain the code:
+
+
+**Setup**
+
+By default, we create a vector beta with the same column length as "X" and set its initial entries to 0. Then we set a threshold value ("thres") and a number of maximum iterations ("max.iter"). After that, we set a counter for the iteration to 0. In addition, we set the amount of change "diff" to 1000 to enter the while loop.
+
+
+**The iterative Part**
+
+For our iterative process, we start a loop with the `while()`-command (R Core Team, 2018). At first, we calculate the probability p with the matrix "X" and beta. Then, we calculate the diagonal matrix "W" by inserting the p-vector. After that, we calculate the updated value for the parameters and updated beta. With the new beta values, we repeat the process until the amount of change is smaller than the threshold value ("tres"). Then we return the betas. To prevent an infinite loop, we stop the while loop if we reach the maximum number of iterations and conclude that the function is not converging to a stationary point. If you want additional information for the function, you can have a look at the info box below.
+
+
+#< info "ML with Newton-Rhapson: Variable Description"
+
+- **X**: Design matrix including intercept ($x_0=1$) and predictors ($x_1, x_2,\cdots,x_n$).
+
+- **y**: The dependent variable.
+
+- **threshold**: Threshold value to check if the logistic regression is converging or not.
+
+- **max.iter**: The maximum number of iterations we want to run.
+
+- **beta**: Parameter values of the current iteration.
+
+- **diff**: The amount of change for the betas in the current iteration. If "diff" is smaller than "threshold", the while loop will stop.
+
+- **iter**: Iteration counter.
+
+- **p**: Probability for the parameters.
+
+- **W**: Diagonal matrix with weights $w_{ii}$.
+
+- **update**: The change rate for the betas.
+#>
+
+Now let us run "log.lik.solve()"" with the example data and compare the parameter estimates with the `glm()`-estimates!
+
+**Task**: Run the function "log.lik" with the already created variables "y" and "X" from "example1". Save the outcome in the variable "log.lik.coef". Uncomment the code.
+```{r "4_8"}
+#< task_notest
+
+# log.lik.coef = ???
+
+# data.frame(Name=c("log.lik.solve", "glm()"),rbind(t(log.lik.coef),coef(formu.glm)))%>%
+# select(Name, beta_0=X.Intercept., beta_1=Prv.End9)
+
+#>
+log.lik.coef = log.lik.solve(y,X)
+
+data.frame(Name=c("log.lik.solve", "glm()"),rbind(t(log.lik.coef),coef(formu.glm)))%>%
+select(Name, beta_0=X.Intercept., beta_1=Prv.End9)
+
+```
+#< award "Maximum Awesomeness Estimator"
+**"Congratulations!"** 
+You know how to perform a maximum likelihood estimation!
+#>
+
+As you can see, we get the same parameter estimations with "log.lik.solve()" as with the `glm()` function.
+
+
+### Odds Ratio: Calculation
+
+Now that we know the basics for estimating parameters, we want to focus on how to interpret them in logistic regression. The only measure of association that can be directly estimated from a logistic model is the so-called "odds ratio" (Kleinbaum et al., 2002). In the following paragraph, we will at first show you how to compute the odds ratio out of the estimated parameters. After that, we will show you how to interpret it.
+
+Recall that we estimated the logarithmized odds (log odds) in our regression. Let us take the estimates we gained from our "example1" as an example. The log odds for 9-ending prices $(x=1)$ would be:
+$$
+log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 \cdot 1=\beta_0 + \beta_1
+$$
+And the log odds for non-9-ending $(x=0)$ prices would be:
+
+$$
+log\left(\frac{p}{1-p}\right) = \beta_0 + \beta_1 \cdot 0=\beta_0 
+$$
+
+For the odds ratio, we do need the odds. To get them, we will "un-transform" the log odds by applying the exponential function.
+
+For 9-ending prices $(x=1)$ we get: $e^{\beta_0+\beta_1}$.
+
+For non-9-ending prices $(x=0)$ we get: $e^{\beta_0}$.
+
+By dividing these two sets of odds, we finally get the odds ratio (Eckel, 2008):
+$$
+Odds Ratio=\frac{e^{\beta_0+\beta_1}}{e^{\beta_0}}
+$$
+Now let us calculate the odds ratio for the example data.
+
+**Task**: In the same fashion as shown in the equation above, compute the odds ratio with the R-command `exp()`. Then show "odds.r".
+```{r "4_9"}
+#< task_notest
+
+beta_0=log.lik.coef[1,]
+
+beta_1=log.lik.coef[2,]
+
+# odds.r= ???
+
+#>
+
+beta_0=log.lik.coef[1,]
+
+beta_1=log.lik.coef[2,]
+
+odds.r=exp(beta_0+beta_1)/exp(beta_0)
+
+odds.r
+
+```
+As you can see, we gain an odds ratio of around 0.83. By applying basic exponent rules ($\frac{e^a}{e^b}=e^{a-b}$), we can further simplify our equation with the following step:
+
+$$
+Odds Ratio=\frac{e^{\beta_0+\beta_1}}{e^{\beta_0}}=e^{(\beta_0+\beta_1)-(\beta_0)}=e^{\beta_1}
+$$
+To summarize: we can gain the odds ratio out of the regression output by merely applying the exponential function on the parameter $\beta_1$.
+
+**Task**: Run the code chunk that computes the odds ratio by applying the exponential function on "beta_1".
+```{r "4_10"}
+#< task_notest
+
+exp(beta_1)
+
+#>
+```
+Of course, we gain the same odds ratio as with the other equation.
+
+
+### Odds Ratio: Interpretation
+
+In general, the odds ratio expresses the likeliness for an event to occur in "A" in comparison to "B" (Szumilas, 2010). For the data sets, as well as for the example, our odds ratios measure (will measure) the likeliness of a price change (*PCH=1*) for 9-endings (*Prv.End9=1*) in comparison to all non-9 endings (Prv.End9=0) (Levy et al., 2011). 
+
+
+**Interpreting the Odds Ratio**
+
+We can interpret the odds ratios in the following way:
+
+- Odds ratio > 1: Indicates that the condition or event (y=1) is more likely to occur in the first group (x=1). 
+
+- Odds ratio < 1: Indicates that the condition or event (y=1) is less likely to occur in the first group (x=1).
+
+- Odds ratio = 1: Indicates that the condition or event (y=1) occurs equally in both groups (Szumilas, 2010).
+
+
+The odds ratio from "example1" *(0.83<1)* indicates that the event of a price change is less likely to occur by a 9-ending price in comparison to all other endings.
+
+We can further quantify the ratio of the example in the following way: a value of *0.83* means that our 9-ending prices deviate around $1-0.83=0.17$ from 1. In other words, this implies that it is 17% less likely for a 9-ending to change in comparison to the reference group (all other endings). In reverse, if our odds ratio would be larger than one, for example 1.25, this would imply that it is 25% more likely to change for a 9-ending in comparison to all other endings (Szumilas, 2010). With this given examples try to answer the following quiz.
+
+
+**Quiz 8: Odds Ratio**
+
+#< quiz "Odds Ratio"
+parts:
+  - question: 1. For a binary predictor with groups "A" (x=1) and "B" (x=0) an odds ratio of 0.25 implies...
+    choices:
+        - a 25% smaller likeliness for event Y (y=1) to occur in group "A" in comparison to "B"
+        - a 75% smaller likeliness for event Y (y=1) to occur in group A in comparison to "B"*
+        - a 75% higher likeliness for event Y (y=1) to occur in group A in comparison to "B"
+        - a 25% higher likeliness for event Y (y=1) to occur in group A in comparison to "B"
+    multiple: FALSE
+    success: Great, this is correct.
+    failure: Try again.
+    
+#>
+
+#< award "From Log to Odd"
+**"Congratulations!"** 
+You can interpret the regression output of a binomial logit model with odds ratios!
+#>
+
+
+Now that we have mastered the basics behind logistic regression with maximum likelihood estimation and know how to interpret the outcome, we can start with our actual study in chapter 4.2!
+
+
+<!--##############################################################################################################################-->
+
+
+## Exercise 4.2 -- Probability of a Price Change - Empirical Study
+
+With the knowledge from chapter 4.1, let us run a first logistic regression with the actual data sets. As a matter of the time consuming duration for running regressions for the complete data sets, we will run the actual regressions only for a smaller sample inside this problem set. For the complete data sets, we will present you the regression output by directly importing the summary afterward.
+
+
+**Load the data sets**
+```{r "4_2_0"}
+#< task_notest
+
+internet = readRDS("Internet.rds")
+
+dominicks = readRDS("dominicks.rds")
+
+#>
+```
+**Cookies**
+
+We will choose the product category "Cookies" from Dominick's as a sub-sample to run the first empirical regression within this problem set.
+
+**Task**: With the `filter()` function, create a sub-sample from the Dominick's data only containing the product category "Cookies". Save it in the variable "cookies".
+```{r "4_2_1"}
+
+cookies = dominicks %>%
+  filter(PRODCAT=="Cookies")
+
+```
+To estimate the price changing probabilities, we will once again work with the `glm()` function. In the info box below, you can get a description for the `glm()` arguments we need. 
+
+#< info "R-Function: glm()"
+
+**Function with important Arguments for Us**:
+```r
+glm(formula =, family =(link = ""), data =)
+```
+- **formula**: Important for the formula notation in this function is the `~` operator. The dependent variable *"y"* has to be written before this operator on the left side. The predictors $x_1,x_2,\cdots,x_n$ have to be written after the `~` operator separated with a `+` symbol (R Core Team, 2018).
+Example: formula = `y ~ x + z`, With `x` and `z` being the predictors for `y`.
+
+- **family**: The error distribution for the model.
+
+- **link**: The link function in the model (logit or probit).
+
+- **data**: A data frame including the variables for the model.
+
+You can get additional information here: https://stat.ethz.ch/R-manual/R-devel/library/stats/html/glm.html.
+#>
+
+For a start, we want to estimate the probability of change for the single cent digits ("Prv.End9"). So let us insert everything into the `glm()` function! We have specified the data. We can compute the equation for the 9-ending cent dummy. We know that we deal with a binomial logit model and therefore, assume binomially distributed error terms for the dichotomous variable "PCH" (Hosmer et al., 2013). 
+
+**Task**: Uncomment the code. Run the logit regression for the cookie sample. Insert the following words in the gaps of the `glm()` function: 
+- *PCH* 
+- *logit*
+- *Prv.End9* 
+- *binomial*
+- *cookies*
+```{r "4_2_2"}
+#< task_notest
+
+# glm.cookie = glm(formula = ___~___, family = _____(link = "_____"), data = _____)
+
+# glm.cookie
+
+#> 
+
+glm.cookie = glm(formula = PCH ~ Prv.End9, family = binomial(link = "logit"), data = cookies)
+
+glm.cookie
+```
+#< award "Regression Recruit"
+**"Congratulations!"** 
+You know how to run a logistic regression with the `glm()` function.
+#>
+
+As you can see, we gain the estimated coefficients for the intercept and the predictor (Prv.End9) as well as some other statistics. To gain an easily interpretable regression summary, we can apply the function `stargazer()` from the `stargazer`-package. You can get additional information in the next info box.
+
+#< info "R-Function: stargazer()"
+
+**Function with important Arguments for Us**:
+```r
+stargazer(..., type)
+```
+The function produces easily interpretable and well-arranged summary statistics. The output is displayed in the form of either LaTeX code, HTML/CSS code or ASCII text (Hlavac, 2018).
+
+- **(...)**: A regression model object, like `glm()`.
+
+- **type**: Output format of the summary ("latex" for LaTeX code, "text" for ASCII text and "html" for HTML/CSS code).
+
+For additional information, you can visit: https://cran.r-project.org/web/packages/stargazer/stargazer.pdf.
+#>
+
+**Task**: Create a summary statistic for "glm.cookie" with `stargazer()` in text format.
+```{r "4_2_3"}
+
+stargazer(glm.cookie, type = "text")
+
+```
+As you can see, we gain the summary output for the regression. In the regression summary, we can observe negative coefficients. Therefore, we get odds ratios smaller than 1, indicating that 9-cent-ending prices are less likely to change in comparison to all other cent endings. The "***" symbol, informs us about our parameters having p-values smaller 0.01. 
+
+
+**P-Value**
+
+The p-value is the probability (plus more extreme results) of the null hypothesis $H_0$ for the observed result. The null hypothesis states that there is no relation between the predictor and the dependent variable. So a small p-value indicates that we can reject $H_0$ on a certain level of significance. In our case, we have p-values under 0.01 indicating that we can reject the null hypothesis and that the parameters are significant on the 1% level (Goodman, 2008).
+
+
+### Binomial Logit Model for each Product Category
+
+Now we will run a logistic regression for the whole data sets by each product category (Levy et al., 2011). With the powerful data manipulation tools from `dplyr`, we can run all logistic regressions together. We will run the `glm()` function inside a `do()` command. With the command `tidy()` from the `broom-package` we will shape the regression outputs into a data table. You can further inform yourself in the info box below about these functions.
+
+
+#< info "R-Functions: tidy() and do()"
+
+**Function with important Arguments for Us**:
+```r
+tidy(x, ...)
+```
+The function can shape a model object into a well-arranged data frame (Robinson and Hayes, 2018).
+
+- **x**: An convertible object, like `glm()`.
+
+You can inform yourself more precisely at the following site: https://cran.r-project.org/web/packages/broom/broom.pdf.   
+  
+**Function with important Arguments for Us**:
+```r
+do(...)
+```  
+Among other things, this function enables the fitting of models per group.
+
+- **...**: Expression that shall be applied to each group (Wickham et al., 2018).
+
+You can inform yourself more precisely at the following site: https://dplyr.tidyverse.org/reference/do.html.
+  
+#>
+
+
+**Dominick's: Logit Regression for the Cent Endings**
+
+Let us start with the Dominick's data. For the smaller price range in the Dominick's data, we will focus on the 9-cent and 99-cent endings (Levy et al., 2011). As a matter of high computation costs, we will load the summary output directly into this problem set. Nevertheless, we show and explain you the code for running the logistic regression in the info box below. 
+
+
+#< info "Logit Regression for Dominick's: R-Code"
+```r
+ glm.d9 = dominicks %>%
+  group_by(PRODCAT)%>%
+  do(Cent9= glm(PCH ~ Prv.End9, family = binomial(link = "logit"), data = .))%>%
+  tidy(Cent9)%>%
+  mutate(odds.r=exp(estimate))%>%
+  filter(term=="Prv.End9")
+ 
+ glm.d99 = dominicks %>%
+  group_by(PRODCAT)%>%
+  do(Cent99= glm(PCH ~ Prv.End99, family = binomial(link = "logit"), data = .))%>%
+  tidy(Cent99)%>%
+  mutate(odds.r=exp(estimate))%>%
+  filter(term=="Prv.End99")
+
+glm.d=merge(glm.d9,glm.d99, by="PRODCAT")%>%
+  select(PRODCAT, odds.r9=odds.r.x, p_value9=p.value.x, odds.r99=odds.r.y, p_value99=p.value.y)
+```
+We ran the logistic regression for two alternatives ("Prv.End9" and "Prv.End99") towards each product category in the `do()` bracket. Then we applied the `tidy()` function on the `glm` objects. For the odds ratio, we applied the exponential function on the coefficient parameter within the `mutate()` bracket. We cut the rows for the intercept values with the `filter()` function. We combined both summary tables with the `merge()` command and selected the statistics of interest.
+
+#>
+
+Before we continue by observing the output table, guess the regression results. 
+
+**Quiz 9: Coefficient Relation**
+
+#< quiz "Coefficient Relation"
+parts:
+  - question: 1. Do you expect that 9-ending-prices are in general less likely to change (odds ratio < 1) or more likely to change (odds ratio >1) in comparison to all other endings?
+    choices:
+        - More likely to change (odds ratio > 1)
+        - Less likely to change (odds ratio < 1)*
+        - Equal (odds ratio ≈ 1) 
+    multiple: FALSE
+    success: Great, this is correct. Run the code below and see for yourself!
+    failure: Try again.
+  - question: 2. Do you expect more differences or commonalities across the product categories in terms of their odds ratio?
+    choices:
+        - Differences 
+        - Commonalities*
+    multiple: FALSE
+    success: Great, this is correct. Run the code below and see for yourself!
+    failure: Try again.
+  - question: 3. Do you expect more differences or commonalities for the single and double cent endings in terms of their odds ratios? 
+    choices:
+        - Differences
+        - Commonalities*
+    multiple: FALSE
+    success: Great, this is correct. Run the code below and see for yourself!
+    failure: Try again.
+
+#>
+
+#< award "Clairvoyant Rank 3"
+**"Congratulations!"** 
+Your expectations for the following regression summary table will measure up!
+#>
+
+
+Now that you have made a guess, let us check the results!
+
+**Task**: Run the code that imports the regression summary table and shows it.
+```{r "4_2_4", table.max.rows=30}
+#< task_notest
+
+glm.d = readRDS("glm.d.rds")
+
+glm.d %>% 
+  mutate_at(2:5, funs(signif(., 2))) 
+
+#>
+```
+We gain a table with 27 rows and five columns. You can observe the odds ratio as well as the p-values for each category and both cent endings. All coefficients are significant on the 1% level (p-value < 0.01). Among both logit models and each product category, the odds ratios are below 1, indicating that 9-cent-ending prices are less likely to change in comparison to non-9-ending prices. We rounded our output table for all numeric values with the commands `mutate_at()` and `signif()`. You can get additional information in the following info box. 
+
+
+#< info "R-Functions: muatate_at() and signif()"
+
+**Function with important Arguments for Us**:
+```r
+mutate_at(.cols, .funs)
+```  
+This command performs operations on specified columns. The selection referencing follows the same rules as for the `select()` command  (R Core Team, 2018).
+
+- **.cols**: A list, character or a numeric vector referencing the columns to select.
+
+- **.funs**: A list or character vector of function names, or the function itself.
+
+You can get additional information here: https://www.rdocumentation.org/packages/dplyr/versions/0.5.0/topics/summarise_all.
+
+**Function with important Arguments for Us**:
+```r
+signif(x, digits)
+```  
+This function rounds the values to a specified number of "significant digits." In general, significant digits are digits that include a meaningful contribution to a measurement. For example, leading zeros have no contribution and are therefore no significant digits (Higham, 2002).
+
+- **x**: A numeric or complex vector.
+
+- **digits**: Number of significant digits to display.
+
+You can get additional information here: https://stat.ethz.ch/R-manual/R-devel/library/base/html/Round.html.
+
+#>
+
+
+**Average Odds Ratio: Dominick's**
+
+Next, we want to summarize an odds ratio over all product categories for both cent endings.
+
+**Task**: Calculate the average odds ratio over all product categories for both cent endings. Fill the missing gaps with either the `sum()` or `NROW()` command and uncomment the code.
+```{r "4_2_5"}
+#< task_notest
+
+# avg.odd.glm=data.frame(Avg.Odd9=___(glm.d$odds.r9)/____(glm.d),
+#                   Avg.Odd99=___(glm.d$odds.r99)/____(glm.d))
+
+# round(avg.odd.glm, digits=4)
+#>
+
+avg.odd.glm=data.frame(Avg.Odd9=sum(glm.d$odds.r9)/NROW(glm.d),
+                   Avg.Odd99=sum(glm.d$odds.r99)/NROW(glm.d))
+
+round(avg.odd.glm, digits=4)
+```
+#< award "Average Ratio"
+**"Congratulations!"** 
+You can compute the average odds ratios.
+#>
+
+We gain an average odds ratio of approximately 0.41 for the estimation with the 9-cent ending and an average odds ratio of 0.59 for the estimation with the 99-cent ending. These results indicate that for 9 respectively 99-ending prices it is 59% respectively 41% less likely to change in comparison to the other price endings (Levy et al., 2011). 
+
+
+### Binary Choice Models with Fixed Effects
+
+Rather than running multiple regressions with the Internet data set, we will now directly refine our logit model by adding product specific effects. The authors of the original paper pointed out that there seems to be a correlation suggesting these kinds of effects. They suspect that products that include 9-endings tend to be more rigid more often (Levy et al., 2011). You can observe the slightly changed equation from Levy et al. (2011) in the paragraph below.
+
+$$ln\left(\frac{q_{jt}}{1-q_{jt}}\right) = \beta_0 + \beta_1\cdot 9Ending_{jt} + \beta_2\cdot Product_j$$
+
+The added variable $Product_{j}$ in the equation above describes a set of product-specific dummy variables based on product id "PID" (Levy et al., 2011). Both data sets included the variable **PID** that classifies this product-specific dummy. So let us run a logistic regression with this model, but this time with another R-function.
+
+
+**Computing Advantage with bife()**
+
+As a reason for growing computational costs by adding product-specific effects, it proved useful for us to switch from `glm()` to another package with faster performance. We decided to use the R-package `bife()`. This package fits binary choice models and is based on the likelihood method as well.  It is programmed to estimate binary choice models in a time efficient way. The authors of the package stated that `bife` could perform regressions much faster than other R-packages (Stammann et al., 2016). You can inform yourself more precisely in the info box below! 
+
+
+#< info "R-Function: bife()"
+
+**Function with important Arguments for Us**:
+```r
+bife(formula=y~x|z, data, model)
+```  
+- **formula**: The formula notation is the same as for `glm()`. The basic in the formation is the `~` operator. It indicates that the dependent variable *"y"* is modeled by linear predictors *"x"* which are noted after the `~` operator. This series of predictors have to be separated with a `+` symbol. The fixed effect *"z"* has to be specified after the `|` operator (Stammann et al., 2016).
+
+- **data**: List or data frame that includes the variables from the model.
+
+- **model**: The error distribution and link function for the model. By default "logit".
+
+For more information, you can visit: https://cran.r-project.org/web/packages/bife/bife.pdf.
+
+#>
+
+
+**Estimation for the Dominick's Data with bife()**
+
+Let us run the logistic regression with fixed effects by using the `bife()` function, at first for the Dominick's data. We mentioned the excellent performance of `bife()`, but running the following regression would nevertheless take too much time. Therefore, we decided against running the product-specific regressions. We will directly load the regression summary table into this problem set. If you are interested in the code for running this regression, you can click at the info box below.
+
+#< info "Code for Summary Table with fixed Effects"
+
+```r
+ bife.d4 = dominicks %>%
+  group_by(PRODCAT)%>%
+  do(Cent9=summary(bife(PCH ~Prv.End9|UPC, data=dominicks))),
+     Cent99=summary(bife(PCH ~Prv.End99|UPC, data=.)))%>%
+  summarise(PRODCAT=PRODCAT, 
+            coef9=Cent9$coefmat_beta[,1], std.error9=Cent9$coefmat_beta[,2],
+            p.value9=Cent9$coefmat_beta[,4], coef99=Cent99$coefmat_beta[,1],
+            std.error99=Cent99$coefmat_beta[,2], p.value99=Cent99$coefmat_beta[,4])%>%
+  mutate(odd.r9=exp(coef9), odd.r99=exp(coef99))%>%
+  select(PRODCAT,coef9,odd.r9,std.error9, p.value9, coef99, odd.r99, std.error99, p.value99)
+```
+Because the `bife`-package is incompatible with the `tidy()` function, we had to extract the coefficients with another method. We grouped the data and ran the regressions with fixed effects inside the `do()` bracket. In the `summarise()` bracket we extracted the parameters of interest from the `bife` object.  With `mutate()` we calculated the odds ratios and picked the statistics of interest with `select()`.
+
+#>
+
+Now let us observe the summary output table for fixed effects.
+
+**Task**: Load the summary table of the logistic regression with fixed effects for the Dominick's data and show it by pressing the "check" button.
+```{r "4_2_6", table.max.rows=30}
+#< task_notest
+
+bife.d = readRDS("bife.d.rds")
+
+bife.d %>% 
+  mutate_at(2:9, funs(signif(., 2))) 
+
+#>
+``` 
+We get a summary regression table for 27 product categories. For each category, we can observe their estimated coefficient of $\beta_1$, their odds ratio, the standard error, and p-value. By observing the p-values, we can see that for the 99-cent estimation two coefficients proved to be not significant ("Bathroom Tissues" and "Frozen_Juices"). Like in our regression without fixed effects by `glm()`, all significant coefficients have an odds ratio under 1, indicating a smaller likeliness to change towards all other price endings (Levy et al., 2011). The shown standard error gives additional information about accuracy. It is an indicator of the uncertainty of the estimate (Altman and Bland, 2005).
+
+
+**Average Odds Ratio Comparison - glm() and bife()**
+
+Next, let us compare the average odds ratios for the model with and without fixed effects.
+
+**Task**: Run the code!
+```{r "4_2_7", fig.width=15, fig.height=5}
+#< task_notest
+
+avg.odd.d=data.frame(Avg.Odd9= sum(bife.d$odd.r9)/NROW(bife.d),
+                     Avg.Odd99=sum(bife.d$odd.r99)/NROW(bife.d))
+
+gdata::combine(round(avg.odd.glm, digits = 4), round(avg.odd.d, digits=4), names=c("glm()","bife()"))
+
+#>
+```
+We gain similar results in comparison to the model without fixed effects. The model with product-specific effects implies a 66%, respectively 44% smaller likeliness for a 9, respectively 99-cent ending price to change in comparison to all other cent endings (Levy et al., 2011).
+
+
+**Estimation for the Internet Data with bife()**
+
+Now let us conduct the same price study for the Internet data. As a result of the higher price range for this data set, we will additionally observe 9-ending dummies in the dollar range. We will also include the product-specific effects (*PID*) in the logit model. As a matter of high computational cost, for running the regression, we will directly provide the summary output. You can inspect the code that computes the summary table in the following info box.
+
+
+#< info "Code for Summary Table with fixed Effects for the Internet Data"
+
+```r
+#Code for 9 cent, 99 cent, 9 dollar and 9.99 dollar
+
+bife.i1 = internet %>%
+  group_by(PRODCAT)%>%
+  do(Cent9=summary(bife(PCH ~Prv.End9|PID, model="logit", data=.)),
+     Cent99=summary(bife(PCH ~Prv.End99|PID, model="logit", data=.)),
+     Dollar9=summary(bife(PCH ~Prv.EndD9|PID, model ="logit", data=.)),
+     Dollar9.99=summary(bife(PCH ~Prv.End999|PID, model ="logit",data=.)))%>%
+  summarise(PRODCAT=PRODCAT, coef9=Cent9$coefmat_beta[,1], p.value9=Cent9$coefmat_beta[,4],
+            coef99=Cent99$coefmat_beta[,1], p.value99=Cent99$coefmat_beta[,4],
+            coefd9=Dollar9$coefmat_beta[,1], p.valued9=Dollar9$coefmat_beta[,4],
+            coefd999=Dollar9.99$coefmat_beta[,1], p.valued999=Dollar9.99$coefmat_beta[,4])%>%
+  mutate(odd.r9=exp(coef9), odd.r99=exp(coef99), 
+         odd.rd9=exp(coefd9), odd.rd999=exp(coefd999))%>%
+  select(PRODCAT,odd.r9, p.value9, odd.r99, p.value99,
+         odd.rd9, p.valued9, odd.rd999, p.valued999)
+
+
+# Code for 99 dollar and 99.99 dollar
+
+bife.i2  = internet%>%
+  filter(!PRODCAT%in%c("Music CDs","Video Games"))%>%
+  group_by(PRODCAT)%>%
+  do(Dollar99=summary(bife(PCH ~Prv.EndD99|PID, model ="logit",data=.)),
+     Dollar99.99=summary(bife(PCH ~Prv.End9999|PID, model ="logit",data=.)))%>%
+  summarise(PRODCAT=PRODCAT, coefd99=Dollar99$coefmat_beta[,1], p.valued99=Dollar99$coefmat_beta[,4],
+            coefd9999=Dollar99.99$coefmat_beta[,1], p.valued9999=Dollar99.99$coefmat_beta[,4])%>%
+  mutate(odd.rd99=exp(coefd99),odd.rd9999=exp(coefd9999))%>%
+  select(PRODCAT, odd.rd99, p.valued99, odd.rd9999,  p.valued9999 )
+```
+As a matter of missing binary outcomes for the lower priced product categories, we had to separate the data into two samples. After that, we computed the summary tables in the same fashion as for the Dominick's data and merged them with the `merge()` command by product category.
+#>
+
+
+**Task**: Load the regression summary table "bife.i.rds". 
+```{r "4_2_8"}
+#< task_notest
+
+bife.i = readRDS("bife.i.rds")
+
+bife.i %>% 
+  mutate_at(2:13, funs(signif(., 2))) 
+
+#>
+```
+For 10 product categories and six different logistic regressions, there is quite the amount of data in the summary table. To gain a better overview, we will make use of conditional formatting. 
+
+
+**Conditional Formatting**
+
+The basic idea behind conditional formatting is to color specific values that stand out (Chamberlain et al., 2009). We want to color the odds ratios that are larger than one, and therefore would be unsupportive to our other findings so far. We also would like to color the p-values larger than 0.05 to search for not significant parameters. To perform this task, we will work with the R-function `condformat()`. You can inform yourself in the info box below.
+
+
+#< info "R-Package: condformat()"
+
+**Function with important Arguments for Us**:
+```r
+condformat(x)
+```  
+The function enables conditional formatting on data frames by piping (Moreno, 2018).
+
+- **x**: The object that shall be formatted. 
+
+
+**Function with important Arguments for Us**:
+```r
+rule_text_color(columns, expression)
+```  
+- **columns**: A vector referencing witch column shall be colored.
+
+- **expression**: Condition for coloring the text.
+
+
+**Function with important Arguments for Us**:
+```r
+condformat2grob()
+```  
+The function converts the formatted table to a grid object.
+
+
+For more information about the `condformat` package, you can visit https://cran.r-project.org/web/packages/condformat/condformat.pdf.
+#>
+
+
+**Task**: Run the code that performs conditional formatting!
+```{r "4_2_9", fig.width=12, fig.height=6} 
+#< task_notest
+
+bife.i%>%
+  mutate_at(2:13, funs(signif(., 2))) %>%
+  condformat %>% 
+    rule_text_color(columns=odd.r9, ifelse(odd.r9 > 1,"blue", ""))%>%
+      rule_text_color(columns=odd.r99, ifelse(odd.r99 > 1,"blue", ""))%>%
+      rule_text_color(columns=odd.rd9, ifelse(odd.rd9 > 1,"blue", ""))%>%
+      rule_text_color(columns=odd.rd99, ifelse(odd.rd99 > 1,"blue", ""))%>%
+      rule_text_color(columns=odd.rd999, ifelse(odd.rd999 > 1,"blue", ""))%>%
+      rule_text_color(columns=odd.rd9999, ifelse(odd.rd9999 > 1,"blue", ""))%>%
+      rule_text_color(columns=p.value9, ifelse(p.value9 > 0.05,"red", ""))%>%
+      rule_text_color(columns=p.value99, ifelse(p.value99 > 0.05,"red", ""))%>%
+      rule_text_color(columns=p.valued9, ifelse(p.valued9 > 0.05,"red", ""))%>%
+      rule_text_color(columns=p.valued99, ifelse(p.valued99 > 0.05,"red", ""))%>%
+      rule_text_color(columns=p.valued999, ifelse(p.valued999 > 0.05,"red", ""))%>%
+      rule_text_color(columns=p.valued9999, ifelse(p.valued9999 > 0.05,"red", ""))%>%
+  condformat2grob()
+
+#>
+```
+We get a formatted table with unsupportive odds ratios *(odds ratio > 1)* in blue and not significant coefficients *(p-value>0.05)* in red. As you can see, there are only 5 out of 56 odds ratios which were larger than one. Two of them are not significant on the 5% level. The other 51 odds ratios indicate that the likeliness to change for a 9-cent-ending is smaller in comparison to all other endings. Note that some data is missing because the product categories music CDs and video games do not include dummies where the values 99.99 or 9.99 dollars are true. 
+
+
+**Average Odds Ratio: Internet Data**
+
+As the last task for this chapter, we will now calculate the average odds ratio for each of the 9-ending variations and compare the ratios with the ones from the Dominick's data. 
+
+**Task**: Run the code that calculates the average odds ratio for the Internet data and adds the average odds ratios from the Dominick's data.
+```{r "4_2_10"}
+#< task_notest
+
+data.frame( I.Avg.Odd9= sum(bife.i$odd.r9)/NROW(bife.i),
+            I.Avg.Odd99=sum(bife.i$odd.r99)/NROW(bife.i),
+            I.Avg.Odd.D9= sum(bife.i$odd.r9)/NROW(bife.i),
+            I.Avg.Odd.D99=sum(bife.i$odd.r99)/NROW(bife.i),
+            I.Avg.Odd999= sum(bife.i$odd.r9)/NROW(bife.i),
+            I.Avg.Odd9999=sum(bife.i$odd.r99)/NROW(bife.i),
+            D.Avg.Odd9=avg.odd.d$Avg.Odd9,
+            D.Avg.Odd99 = avg.odd.d$Avg.Odd99)%>%
+  round(digits = 4)
+#>
+```
+We get a table with eight rows and two columns, listing the average odds ratios for the single and double cent digits for both data sets, as well as the last dollar digits for the Internet data. All average odds ratios are under one, indicating that for a 9-ending price it is less likely to change in comparison to all other price endings. For the Internet data 9-cent ending prices are 21%, 99-cent ending prices 31%, 9-dollar ending prices 32%, 99-dollar ending prices 53%, 9.99-dollar ending prices 44% and 99.99 dollar ending prices 63% less likely to change in comparison to non-9-ending prices (Levy et al., 2011). 
+
+
+### Summary of Chapter 4.
+
+**What We learned in this Chapter:**
+
+- For most of the data, the likeliness of a price change seems to differ between 9- and non-9-ending prices.
+
+- For most of the results, 9-ending prices were less likely to change than all other price endings.
+
+- We observed the higher stickiness of a 9-ending price across all data sets, product categories and numbers of decimal places.
+
+
+**What Skills You should have mastered in this Chapter:**
+
+- You understand the estimation method of maximum likelihood.
+
+- You know how the Newton-Rhapson method works.
+
+- You can interpret the summary output of a logistic regression by the odds ratio.
+
+- You can use the functions `glm()` and `bife()` to run logistic regressions.
+
+- You can conditionally format a data table in R with `condformat()`.
+
+<!--##############################################################################################################################-->
+
+
+## Exercise 5.0 -- Mean Price Change
+
+In the last chapters, we observed the price endings towards their transition probability and likeliness to change. Now we want to replicate the study of Levy et al. (2011) for the amount of a price change. To perform this task, we will compare the mean price change for 9- and non-9-ending prices. Like in chapter 4, we will present different alternatives. We want to observe the outcome for different decimal places and product categories. 
+
+First, we will show you how to calculate the mean price change with `dplyr`. Then we will calculate the mean price change over time for the single cent digits and visualize the output. Then, we will compare the mean price changes of the 9- and non-9-ending prices with each other by conducting a two sampled independent t-test. We will give you a short introduction into calculating the t-value and then begin with the study. After that, we will split the data into a subgroup containing only the products with a low price range. We will then compare the results of this sub-samples with the results of the complete data sets (Levy et al., 2011).
+
+For calculating the mean price change, we will focus on the observations, were a price change happened (PCH==1). Now let us begin by importing the data sets and cutting off the observations without a price change! 
+
+**Load the part of the data sets that contain price changes**
+```{r "5_0"}
+#< task_notest
+int = readRDS("Internet.rds")%>%
+  filter(PCH==1)
+
+dom = readRDS("dominicks.rds")%>%
+  filter(PCH==1)
+#>
+```
+**Quiz 10: Expectations on Mean Price Changes**
+
+At first, make a guess about the expectations of the original authors on this topic. For this purpose, it can be helpful to know about the key-findings of *chapter 4* and the *"menu cost theory"*. For the menu cost theory, you can check out the info box below. 
+
+#< info "Menu Cost Theory"
+
+Menu costs are the costs of a firm that result from changing its prices (Sheshinski and Weiss, 1977). The theory also states that all **costs** of a price change over a **period** have to be the same (Dutta et al., 1999). 
+
+#>
+
+Which of the following statements do you think Levy et al. (2011) assumed for the following mean price change study?
+
+#< quiz "Expectations on Mean Price Changes."
+parts:
+  - question: 1. Consistent with the menu cost theory (Dutta et al., 1999) and the findings of chapter 4 (Levy et al., 2011), 9-ending prices...
+    choices:
+        - ...do not change as often as other ending prices, therefore the authors expected a smaller price change when it happens.
+        - ...do not change as often as other ending prices, therefore the authors expected a bigger price change when it happens.*
+        - ...do change more often as other ending prices, therefore the authors expected a smaller price change when it happens.
+        - ...do change more often as other ending prices, therefore the authors expected a bigger price change when it happens.
+    multiple: FALSE
+    success: Great, this is correct.
+    failure: Try again.
+#>
+
+
+#< award " Clairvoyant Rank 4"
+**"Congratulations!"** 
+You are right about the expectations of the original authors for the mean price change.
+#>
+
+With this expectations in mind, let us continue.
+
+
+### Mean Price Change with dplyr
+
+For the study, we need a variable that includes the amount of price change. For this purpose, both of our data sets contain the variable *"PCHANGE"*. For a better understanding of this variable, have a look at the following task box. Note that the R-command `Lag()` from the `Hmisc`-package references the elements of the previous column (Harrell et al., 2018).
+
+
+**Task**: Run the code below that clarifies the content of "PCHANGE".
+```{r "5_1"}
+#< task_notest
+
+readRDS("Internet.rds") %>%
+  mutate(Prv.Price=Lag(PRICE))%>%
+  filter(PCH==1)%>%
+  select(PRICE, Prv.Price, PCHANGE)%>%
+  head()
+
+#>
+```
+The code produces three columns. One containing the price ("PRICE"), one containing the price of the previous period ("Prv.Price") and one column with the name "PCHANGE." As you can see, the variable "PCHANGE" includes the absolute amount of a price change.
+
+
+**Mean Price Change - Dominick's: Single Cent Digits**
+
+Now that you are familiar with the variables, we will begin with the actual mean price change study from Levy et al. (2011). We will start by computing the mean price change for the Dominick's data. First, we will observe the price changes for the 9- and non-9-cent ending prices. To calculate the mean price change, we will again make use of the `mean()` function.
+
+**Task**: Calculate the mean price change for the Dominick's data. Fill the gaps with one of the following words:  
+- *Prv.End9*
+- *PCHANGE*
+```{r "5_2"}
+#< task_notest
+
+# dom %>%
+# group_by(______)%>%
+# summarise(Mean_Price_Change=mean(______))%>%
+# round(digits=2)
+
+#> 
+
+dom %>%
+ group_by(Prv.End9)%>%
+ summarise(Mean_Price_Change=mean(PCHANGE))%>%
+ round(digits=2)
+
+```
+We get a table listing the mean amount of a price change (in dollars) for the 9- and non-9-cent-ending prices. For the 9-ending prices we gain a mean change around 0.35 dollars. For the non-9-ending prices, we get a mean change around 0.24 dollars. 
+
+
+**Mean Price Change - Internet: Cent Digits**
+
+Next, we want to calculate the amount of mean price change for the single 9-ending digits (*9 cents and 9 dollars*) in the Internet data.
+
+**Task**: In the same fashion as the task above, calculate the mean price change for the Internet data. Save the results in the variables "int.mpc.c" (cent digits) and "int.mpc.d" (dollar digits). After that, uncomment the already written code and run the chunk! You do not need to round the values!
+```{r "5_3"}
+#< task_notest
+
+# int.mpc.c= ???
+
+# int.mpc.d= ???
+
+# data.frame(Endings=c("No-9-Ending", "9-Ending"),
+#           Mean_Price_Change_Cent=round(int.mpc.c$Mean_Price_Change, digits=2),
+#           Mean_Price_Change_Dollar=round(int.mpc.d$Mean_Price_Change, digits=2))
+
+#>
+
+int.mpc.c = int %>%
+  group_by(Prv.End9)%>%
+  summarise(Mean_Price_Change=mean(PCHANGE))
+
+int.mpc.d = int %>%
+  group_by(Prv.EndD9)%>%
+  summarise(Mean_Price_Change=mean(PCHANGE))
+
+data.frame(Endings=c("Non-9-Ending", "9-Ending"),
+           Mean_Price_Change_Cent=round(int.mpc.c$Mean_Price_Change, digits=2),
+           Mean_Price_Change_Dollar=round(int.mpc.d$Mean_Price_Change, digits=2))
+
+```
+#< award "Mean Maker"
+**"Congratulations!"** 
+You can calculate the mean price change for grouped data.
+#>
+
+We gain a table with two rows and three columns, listing the mean price change for the single cent and dollar digit by 9- and non-9-ending prices. For the single cent digits, the mean change rate is around 15.54 dollar for the 9-ending and around 18.07 dollar for the other endings. For the single dollar digit, the mean price change is around 32.11 dollar for the 9-ending digit and around 12.83 dollars for the other digits (Levy et al., 2011).
+
+
+### Amount of Price Change over Time
+
+To search for additional patterns, we will compute the mean price change over time for the single cent digits. For this analysis, we want to include all lower priced data. Therefore, we will observe the whole Dominick's data as well as the lower priced product categories (CDs, DVDs and video games) of the Internet data. We want to observe the mean change for the Internet data per day ("DAY") and for the Dominick's data per week ("WEEK"). Besides we will visualize the data in the form of line charts with `ggplot()`.
+
+**Task**: Run the code that visualizes the mean price change over time for the single cent digits.
+```{r "5_4", fig.width=15, fig.height=5}
+#< task_notest
+
+mean.time.dom = dom %>%
+  group_by(WEEK, Prv.End9)%>%
+  summarise(mean = mean(PCHANGE))%>%
+  ungroup()%>%
+  ggplot(aes(x = WEEK, y = mean, color=as.logical(Prv.End9))) + 
+  geom_line()+
+  labs(x="Week", y="Mean in $", color= "Ending is 9",
+       title="Dominick's: Mean Price Change for the last Cent Digits over Time")
+
+mean.time.int = int %>%
+  filter(PRODCAT%in%c("Music CDs","Movie DVDs","Video Games"))%>%
+  group_by(DAY, Prv.End9)%>%
+  summarise(mean = mean(PCHANGE))%>%
+ungroup()%>%
+  ggplot(aes(x = DAY, y = mean, color=as.logical(Prv.End9))) + 
+  geom_line()+
+  labs(x="Day", y="Mean in $", color= "Ending is 9",
+       title="Internet (Music CDs, Movie DVDs, Video Games): Mean Price Change for the last Cent Digits over Time")
+  
+grid.arrange(mean.time.dom, mean.time.int, nrow=2)
+
+#>
+```
+We grouped the data at first by the time variables (WEEK or DAY) and the 9-ending dummy "Prv.End9". For the Internet data, we filtered out the higher priced product categories with `filter()`. After that, we calculated the mean price change for each period and each realized value of "Prv.End9" in the `summarise()` function. Next, we added the `ggplot()` function to visualize the data in the form of a line chart with `geom_line()`. We arranged the line charts under each other with `grid.arrange()`. 
+
+We get two line charts including the mean price change over time. There seems to be no strong upwards or downwards trend for the mean price change in all observations. For most of the time, the 9-cent-ending prices seem to stay over the non-9-ending-prices in both line charts. 
+
+
+### Two-sided independent t-Test
+
+Next, we will continue by **comparing** the mean price change. To check if 9- and non-9-ending prices share the same mean, we will conduct a so-called **t-test**. For this purpose, we will use the R-command `t.test()` from the `stats`-package  (R Core Team, 2018). Because we are dealing with two independent samples (9- and non-9-ending prices) we will use the unpaired form of the t-test (Student, 1908). For the t-test in R, you can get additional information in the info box below!
+
+
+#< info "Students t-Test in R"
+
+**Function with important Arguments for Us**:
+```r
+t.test(formula, var.equal, data )
+```  
+- **formula**: Formula of the form `y ~ x`. With `y` for the data values and `x` as a factor for the corresponding groups.
+
+- **var.equal**: If the argument equals TRUE, then both variables are treated equally. Then an estimated variance ("pooled variance") is used for both variables together (Killeen, 2005).
+
+- **data**: A data frame that contains the variables from the formula.
+
+For additional information, you can visit the following site: https://www.rdocumentation.org/packages/stats/versions/3.5.2/topics/t.test.
+
+#>
+
+
+**Two-sided independent T-test - Internet: 9-Cent Digit**
+
+As a first task, we want you to have a look at the following t-test output.
+
+**Task**: Run the code below.
+```{r "5_5"}
+#< task_notest
+
+t.test(PCHANGE ~ Prv.End9, data=int, var.equal = TRUE)
+
+#>
+```
+We compared the mean price changes for the single cent digits of the Internet data. As you can, see we gain statistics describing the relation between both means. The t-value and p-value indicate, whether we can reject the null hypothesis for equal means. With a p-value smaller than 0.01 we can indeed reject the null hypothesis for this sample (Kim, 2015). 
+
+
+### Calculate your own t-Value
+
+To gain a better understanding of how to get to the p- and t-value, we will now replicate these results manually.
+
+The t-value for an independent sample with equal variance and different numbers of observations can be calculated in the following way (Kim, 2015):
+$$
+t= \frac{\overline{x}_1 - \overline{x}_2}{s^2_{1,2}\cdot\sqrt{\frac{1}{n_1}+\frac{1}{n_2}}}
+$$
+with $\overline{x}_1$,$\overline{x}_2$ being the sample mean of our two samples and $n_1$,$n_2$ being the sample size.
+
+The pooled variance $s^2_{1,2}$ can be expressed by the following equation:
+$$
+s^2_{1,2}=\frac{(n_1-1)s^2_1+(n_2-1)s^2_2}{n_1+n_2-2}
+$$
+with $s_1$ and $s_2$ being the standard deviation of the samples.
+
+
+**Calculating the t-Value in R**
+
+With the help of these equations, let us calculate the t-value. In the following code, we save the mean values for the 9- and non-9-cent endings in the variables "mean.x1" and "mean.x2". Remember that we already calculated them in an exercise before ("int.mpc.c")! Besides, we save in the vectors "x_1" and "x_2" the price change for each 9- and non-9-cent ending. 
+
+**Task**: Run the code below.
+```{r "5_6"}
+#< task_notest
+mean.x1=as.numeric(int.mpc.c[1,2])
+mean.x2=as.numeric(int.mpc.c[2,2])
+
+x_1=int$PCHANGE[int$Prv.End9==0]
+x_2=int$PCHANGE[int$Prv.End9==1]
+
+mean.x1
+mean.x2
+#>
+```
+Next, we want to save the size of both samples in separate vectors "n_1" and "n_2".
+
+**Task**: Save in the variables "n_1" the sample size of the non-9-ending observations and in "n_2" the sample size of the 9-ending observations. Use the command `NROW()`.
+```{r "5_7"}
+
+n_1=NROW(x_1)
+n_2=NROW(x_2)
+
+```
+Now that we have the means and sample sizes we can calculate the pooled variance "s2_12". To gain the standard deviation of x_1 and x_2 we can apply the `sd()` function on them.
+
+**Task**: Run the code.
+```{r "5_8"}
+#< task_notest
+
+s2_12 = ( (n_1-1)*sd(x_1)^2 + (n_2-1)*sd(x_2)^2 ) / (n_1+n_2-2)
+
+s2_12
+
+#>
+```
+With the pooled variance we can finally compute the t-value. With the t-value, we can calculate the p-value out of the Student's t-distribution. Instead of selecting the right t-distribution value out of a distribution table we can apply the R-function `pt()` to get the p-value (R Core Team, 2018). You can get additional information for this function in the info box below.
+
+#< info "R-Function: pt()"
+
+**Function with important Arguments for Us**:
+```r
+pt(q, df)
+```  
+- **q**: Quantile, in our case the t-value.
+
+- **df**: Degrees of freedom. In our case the complete sample size N-1 (Fahrmeir et al., 2016).
+
+For further information, you can visit: https://stat.ethz.ch/R-manual/R-devel/library/stats/html/TDist.html.
+
+#>
+
+
+**Task**: Uncomment the code. Compute the t-value. Fill each gap with one of the following variables:
+- *s2_12*
+- *mean.x2*
+- *n_1*
+```{r "5_9"}
+#< task_notest
+
+# t.val= (mean.x1-_____)/(sqrt(_____)*sqrt((1/___)+(1/n_2)))
+
+# p.val= 2*pt(t.val, df=(n_1+n_2)-1, lower.tail=FALSE)
+
+# data.frame(t.val, p.val)%>%
+#  signif(digits = 4)
+
+#>
+
+t.val=(mean.x1-mean.x2)/(sqrt(s2_12)*sqrt((1/n_1)+(1/n_2)))
+
+p.val= 2*pt(t.val, df=(n_1+n_2)-1, lower.tail=FALSE)
+
+data.frame(t.val, p.val)%>%
+  signif(digits = 4)
+
+```
+
+#< award "t-Tester"
+**"Congratulations!"** 
+You know how to run a two-sided independent t-test.
+#>
+
+As you can see, we gain the same t- and p-value as from the R-function `t.test()`. Now that you are familiar with the two sample t-test, let us compare the means for the rest of the data.
+
+
+### Two-sided independent t-Test 
+
+Next, we will create a table listing the mean price changes of all 9-ending variations in one function! Therefore, we bind the summary tables created by `t.test()` inside the `tidy()` function together with the R-command `rbind()`. For a better overview we add a vector containing a description of our observations with `cbind()`. After that, we select the values we are interested in and round the output.
+
+**Task**: Run the code that performs a two-sided t-test for all alternatives and both data sets.
+```{r "5_10"}
+#< task_notest
+
+rbind(tidy(t.test(PCHANGE ~ Prv.End9, data=dom, var.equal = TRUE)),
+      tidy(t.test(PCHANGE ~ Prv.End99, data=dom, var.equal = TRUE)),
+      tidy(t.test(PCHANGE ~ Prv.End9, data=int, var.equal = TRUE)),
+      tidy(t.test(PCHANGE ~ Prv.End99, data=int, var.equal = TRUE)),
+      tidy(t.test(PCHANGE ~ Prv.EndD9, data=int, var.equal = TRUE)),
+      tidy(t.test(PCHANGE ~ Prv.EndD99, data=int, var.equal = TRUE)),
+      tidy(t.test(PCHANGE ~ Prv.End999, data=int, var.equal = TRUE)),
+      tidy(t.test(PCHANGE ~ Prv.End9999, data=int, var.equal = TRUE)))%>%
+cbind(Name=c("1. Dominick's Single Cent Digits", "2. Dominick's Double Cent Digits", "3. Internet Single Cent Digits",
+             "4. Internet Double Cent Digits","5. Internet Single Dollar Digits","6. Internet Double Dollar Digits",
+             "7. Internet Last 3 Digits","8. Internet Last 4 Digits"))%>%
+select(Name,Mean_Change_9=estimate2, Mean_Change_No9=estimate1, statistic, p.value) %>% 
+  mutate_at(2:4, funs(round(., 2)))%>%
+  mutate_at(5,funs(signif(., 2))) 
+
+#>
+```
+We get a table with eight rows and five columns containing the t-test statistics of interest. With a p-value under 0.01, all coefficients are significant on the 1% level. Except for the single cent digit in the internet sample, the mean price changes for 9-ending prices are higher than for the non-9-ending prices (Levy et al., 2011). 
+
+
+**Mean Price Change and Price Range**
+
+Next, we are interested in the impact of the price range towards the mean price change. Again, we want to separate the Internet data into a sample containing the seven higher priced product categories and a sample containing the three lower priced product categories.
+
+**Task**: Run the code.
+```{r "5_11", fig.width=8, fig.height=8 }
+#< task_notest
+
+int.low = int%>%
+  filter(PRODCAT%in%c("Movie DVDs", "Music CDs ", "Video Games"))
+
+int.high = int%>%
+  filter(!PRODCAT%in%c("Movie DVDs", "Music CDs ", "Video Games"))
+
+t.test.low = rbind(tidy(t.test(PCHANGE ~ Prv.End9, data=int.low, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.End99, data=int.low, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.EndD9, data=int.low, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.EndD99, data=int.low, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.End999, data=int.low, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.End9999, data=int.low, var.equal = TRUE)))%>%
+            cbind(Name=c( "Single Cent Digits","Double Cent Digits","Single Dollar Digits",
+                          "Double Dollar Digits","Last 3 Digits","Last 4 Digits"))%>%
+           select(Name,Mean_Change_9=estimate2, Mean_Change_No9=estimate1, statistic, p.value)%>% 
+           mutate_at(2:4, funs(round(., 2)))%>%
+           mutate_at(5,funs(signif(., 2))) 
+
+t.test.high = rbind(tidy(t.test(PCHANGE ~ Prv.End9, data=int.high, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.End99, data=int.high, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.EndD9, data=int.high, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.EndD99, data=int.high, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.End999, data=int.high, var.equal = TRUE)),
+                   tidy(t.test(PCHANGE ~ Prv.End9999, data=int.high, var.equal = TRUE)))%>%
+            cbind(Name=c( "Single Cent Digits","Double Cent Digits","Single Dollar Digits",
+                          "Double Dollar Digits","Last 3 Digits","Last 4 Digits"))%>%
+           select(Name,Mean_Change_9=estimate2, Mean_Change_No9=estimate1, statistic, p.value)%>% 
+           mutate_at(2:4, funs(round(., 2)))%>%
+           mutate_at(5,funs(signif(., 2))) 
+
+grid.arrange(textGrob("Product Categories with lower Price Range"),tableGrob(t.test.low, rows =NULL), textGrob("Product Categories with higher Price Range"), tableGrob(t.test.high,rows = NULL), nrow=4)
+
+#>
+```
+We get two tables listing the important t-statistics for the lower and higher priced categories. Except for the single cent ending in the higher priced sample, all parameters are significant on the 1% level. For all significant results, the mean price change of 9-ending prices is higher than for the other price endings.
+
+With these results in mind, did the assumptions from Levy et al. (2011) in terms of the mean price change prove right? Answer the following quiz.
+
+
+**Quiz 11: Levy's Assumptions**
+
+#< quiz "Levy's Assumptions"
+parts:
+  - question: 1. Did the assumptions from Levy et al. (2011) about the mean price change rather prove right or wrong?
+    choices:
+        - Right*
+        - Wrong
+    multiple: FALSE
+    success: Great, your answer is correct! For all significant results, the mean price changes for 9-ending prices were higher.
+    failure: Try again.
+    
+#>
+
+
+#< award "Mean Master."
+**"Congratulations!"** 
+Based on the results from this chapter, you are right about the fulfilled assumptions from Levy et al. (2011).
+#>
+
+
+### Summary of Chapter 5.
+
+
+**What We learned in this Chapter:**
+
+- For the majority of the observation period, 9-cent-endings have a higher mean price change than the other endings.
+
+- In 15 out of 16 t-tests, the mean price change for 9-ending prices is higher than for the non-9-endings.
+
+- For the complete data sets, the mean price changes of 9- and non-9-ending prices differ significantly (on the 1% level) from each other.
+
+- In all t-tests for the lower priced product categories (Internet data) the mean price change for 9-endings is higher and significantly different in comparison to the other endings.
+
+- In 5 out of 6 t-tests for the higher priced product categories ("*Internet data*"), the mean price change for 9-endings is higher and significantly different.
+
+
+**What Skills You should have mastered in this Chapter:**
+
+- You can calculate the mean price change for grouped data with tools from the `dplyr` package.
+
+- You can visualize observations over time with `geom_line()`.
+
+- You can calculate the t-value and extract the right p-value with `pt()`.
+
+- You know how to conduct and interpret a student's t-test with the R-command `t.test()`.
+
+
+<!--##############################################################################################################################-->
+
+## Exercise 6.0 -- Robustness
+
+A typical activity in empirical studies is a so-called **"robustness check"**. The term robust refers to the strength of a specific outcome from a statistical model, procedure or test. A study is robust if the conclusions based on the findings do not change when the assumptions change  (Kuorikoski et al., 2007). To call our interactive study robust, we need to dig for additional evidence that supports the results. As a matter of the limited extent for this problem set, we will only conduct one robustness check for findings in chapter 2.
+
+
+**Load the data set**
+```{r "6_0"}
+#< task_notest
+dominicks = readRDS("dominicks.rds")
+#>
+```
+
+**Robustness Chapter 2. - Dominick's: Price Endings by Store**
+
+We want to check for robustness by grouping the Dominick's data by its different stores. For each group, we will compute the relative frequency of the single cent endings and compare them with each other, as well as with the original findings.
+
+As you can see in the code chunk below, we groupe the data by store and price ending and count the number of observations within the `summarise()` function. To gain the relative frequency we group the data again, this time only by their stores. We divide the absolute frequency ("number") by the total number of all prices for each store within a `mutate()` function.
+
+After computing the relative frequency, we create a histogram with the tools from the `ggplot2` package. We declare the "STORE" variable within the `fill` argument. In addition, we load the rds-file "domi.end1.hist" containing the original frequency histogram. With `grid.arrange()` we plot both histograms under each other to enable comparison.
+
+**Task**: Run the code.
+```{r "6_1", fig.width=14, fig.height=8}
+#< task_notest
+
+domi.end1.hist = readRDS("domi.end1.hist.rds")
+
+domi.store1.hist = dominicks %>%
+  group_by(STORE,END1)%>%
+  summarise(number=n())%>%
+  group_by(STORE)%>%
+  mutate(freq=number/sum(number)*100)%>%
+ggplot(aes(x=as.character(END1),y=freq, fill=as.factor(STORE))) +                      
+  geom_col(position = "dodge")+    
+  coord_cartesian(ylim=c(0, 70))+
+  labs(x="Price Ending in Cents", y="Frequency", fill="Store", title="Robustness: Single Ending Frequency by Store")
+
+grid.arrange(domi.store1.hist,domi.end1.hist, nrow=2)
+#>
+```
+As you can see, we get two histograms that show the frequency for the 9-cent endings. The black histogram displays the single ending frequency of the original data from chapter 2. The colored histogram shows the single ending frequency by store. Does this result support the robustness of our findings in chapter 2? Try to answer the following quiz.
+
+
+**Quiz 12: Robustness - Histogram Comparison**
+
+#< quiz "Robustness - Histogram Comparison"
+parts:
+  - question: 1. By comparing both histograms,...
+    choices:
+        - ...there seem to be no major differences in the frequency distribution for each store.*
+        - ...there are some major differences regarding store 8.
+        - ...there are some major differences reading store 122.
+    multiple: FALSE
+    success: Great, your answer is correct!
+    failure: Try again.
+  - question: 2. These results...
+    choices:
+        - ...are rather unsupportive than supportive to the findings of chapter 2.
+        - ...are rather supportive than unsupportive to the findings of chapter 2.*
+    multiple: FALSE
+    success: Great, your answer is correct!
+    failure: Try again.
+    
+#>
+
+#< award "Robust!"
+**"Congratulations!"** 
+You can conduct a robustness check and draw conclusions out of it.
+#>
+
+
+### Additional Evidence from Levy et al. (2011)
+
+In the following paragraph, we list some additional evidence for the findings of chapter 2 to 5, Levy et al. (2011) conducted within their robustness checks:
+
+
+*For Chapter 2: The Popularity of Price Endings*
+
+- For all 93 Dominick's stores, the 9 and 99-cent ending were the most frequent.
+
+- Grouping by product categories, in 8 out of 10 categories of the Internet data, the 9-dollar digit was the most common. In all 10 product categories, the 99 dollar ending was the most frequent.
+
+
+*For Chapter 3: Transition Probability*
+
+- For all 93 Dominick's stores, 9 to 9 was the most popular transition.
+
+- Within the low-priced product categories of the Internet data, there were considerably more preservations of 9-endings after a price change for the dimes and dollars.
+
+- For the higher priced product categories, 9-endings were more rigid for multiples of 10 and 100 dollars.
+
+
+*For Chapter 4: Price Change Probabilities*
+
+- For all 93 Dominick's stores together, a smaller likeliness to change for 9-endings in comparison to all other endings can be observed.
+
+- For each of the four stores of the main study, a strong positive link between 9-ending prices and price rigidity can be observed.
+
+
+*For Chapter 5: Mean Price Change*
+
+- In 23 out of 27 product categories from the Dominick's data, the mean price change for the 9-cent ending was higher than for the other endings.
+
+- In 8 out of 10 product categories from the Internet data, the mean price change was higher for the 9-cent ending than for than for the other endings.
+
+- In 9 out of 10 product categories from the Internet data, the mean price change was higher for the 9-dollar ending than for the other endings.
+
+
+
+**Appendix**
+
+These and many other robustness checks can also be obtained from the appendix of the original study. You can get them at the following link: https://www.mitpressjournals.org/doi/suppl/10.1162/REST_a_00178/suppl_file/REST934.Levy.e-supp.pdf.
+
+
+
+### Summary of Chapter 6.
+
+
+**What We learned in this Chapter:**
+
+- The robustness check we conducted, supports the findings of chapter 2.
+
+- There is additional evidence supporting the findings from chapters 2-5 from Levy et al. (2011). 
+
+
+**What Skills You should have mastered in this Chapter:**
+
+- You know the basic idea behind robustness checks.
+
+- You can separate between supportive and unsupportive results in a robustness check.
+
+
+<!--##############################################################################################################################-->
+
+## Exercise 7.0 -- Conclusion
+
+In this problem set, we studied the relationship between price points and price rigidity. We replicated the result from Levy et al. (2011) with their data sets. One data set containing weekly price data for 27 different product categories over eight years in four different stores from the American supermarket chain "Dominick's." The other one containing daily prices of ten different product categories covering mostly high priced electronic goods over more than two years from different online retailers.
+
+
+### What We learned in this Problem Set
+
+In *chapter 2* we found out that 9-ending prices seem to be the most popular for the Dominick's data. For the Internet data the 0- and 00- endings were the most frequent within the cent range and 9- and 99- were the most common endings within the dollar range.
+
+In *chapter 3* we saw that the most popular price ending changes were from 9 to 9 in the Dominick's data. Behind the high frequency of a rigid zero cent ending for the Internet data, we suspected the price range. By separating the Internet data into a lower and higher priced group, we found evidence for this theory.
+
+In *chapter 4* we estimated the likeliness for a price change. For both data sets over all models and alternatives, the likeliness to change for 9-ending digits is smaller in comparison to non-9-ending prices. 
+
+In *chapter 5* we compared the mean price changes for 9- and non-9 endings with each other. Over most of the data, the mean price change for 9-endings was higher and differed significantly from the other endings.
+
+In terms of the study's contribution to macroeconomic theory, I agree with Levy et al. (2011). They state that these findings offer direct evidence for a connection between price points and price rigidity. By the amount of data behind these findings, I believe that the price point theory is substantial enough to contribute their part for explaining the phenomenon of rigid prices!
+
+
+### Outlook
+
+We dealt with data from an American supermarket chain and data extracted from an American price comparison site. Therefore it would be interesting to further observe the use of price points for other countries, regions, and cultures. For example, Heeler and Nguyen (2001) found out that close to 50% of restaurant menu prices sampled in Hong Kong had 8-endings. They suspect a connection for these findings within the Chinese culture, where this number is associated with success.
+
+
+### What Skills You have mastered in this Problem Set
+
+You have mastered a long and exciting journey through my problem set with the title *“Price Points and Price Rigidity: An Interactive Analysis with R."* You ventured across an interesting economic study, learned a lot about statistics and even more about the open source software "**R**" and its variety of packages!
+
+In the last code chunk, you can display all the awards you collected through this problem set. The maximum number of achievable awards is **25**. In the last info box, I reward you with a rank depending on the number of awards you achieved.
+```{r "7_0"}
+#< task_notest
+awards()
+#>
+```
+
+#< info "Look up Your Rank!"
+
+- **Visitor** (0-10 awards): You visited only some chapters of this problem set.
+
+- **Economists** (11-16 awards): You were interested in the economic study but skipped most of the questions.
+
+- **R-Enthusiast** (17-22 awards): With your R-skills, you ventured through this problem set successfully and only skipped some questions.
+
+- **Expert** (23-25 awards): You solved the complete problem set! You are a statistician, a clairvoyant, and a question master!
+
+#>
+
+
+
+### Thanks a lot...
+
+**...for solving this problem set about price points and price rigidity!**
+
+
+<!--##############################################################################################################################-->
+
+## Exercise Literature
+
+
+### Bibliography
+
+- Altman, D. G., & Bland, J. M. (2005): *Standard deviations and standard errors*. Bmj, 331(7521), 903.
+
+- Bizrate: *Gale Encyclopedia of E-Commerce*. . Retrieved January 03, 2019 from Encyclopedia.com: https://www.encyclopedia.com/economics/encyclopedias-almanacs-transcripts-and-maps/bizratecom
+
+- Blinder, A., Canetti, E. R., Lebow, D. E., & Rudd, J. B. (1998): *Asking about prices: a new approach to understanding price stickiness*. Russell Sage Foundation.
+
+- Bubeck, S. (2015): *Convex optimization: Algorithms and complexity. Foundations and Trends? in Machine Learning*, 8(3-4), 231-357.
+
+- Chamberlain, B. C., Jones, B. C., Street, C. M., & Vigesaa, E. B. (2009): *"Multiple conditional formatting"*., U.S. Patent 7,634,717, issued December 15.
+
+- Dixon, H. D. (2001): *The role of imperfect competition in New Keynesian economics*. In Surfing Economics (pp. 74-108). Palgrave, London.
+
+- Draper, N. R., & Smith, H. (2014): *Applied regression analysis (Vol. 326)*. John Wiley & Sons.
+
+- Domingos, P. (2012): *A few useful things to know about machine learning*. Communications of the ACM, 55(10), 78-87.
+
+- Dutta, S., Bergen, M., Levy, D., & Venable, R. (1999): *Menu costs, posted prices, and multiproduct retailers*. Journal of Money, Credit, and Banking, 683-703.
+
+- Eckel, S. (2008): *Interpreting Logistic Regression Models*. Retrieved April, 01, 2019, on: http://www-hsc.usc.edu/~eckel/biostat2/slides/lecture14.pdf.
+
+- Erhardt, E. B. (2009): *Logistic Regression and Newton-Raphson*. Retrieved April, 02, 2019, on: https://statacumen.com/teach/SC1/SC1_11_LogisticRegression.pdf.
+
+- Givens, G. H., & Hoeting, J. A. (2012): *Computational statistics*, Vol. 710, John Wiley & Sons.
+
+- Goodman, S. (2008, July): *A dirty dozen: twelve p-value misconceptions*. In Seminars in hematology (Vol. 45, No. 3, pp. 135-140). WB Saunders.
+
+- Hackl, F., Kummer, M. E., & Winter-Ebmer, R. (2014): *99 Cent: Price points in e-commerce*. Information economics and Policy, 26, 12-27.
+
+- Heeler, R., & Nguyen, A. (2001): *Price endings in Asia*. Proceedings of Australia-New Zealand Marketing Association, Auckland, New Zealand.
+
+- Higham, N. J. (2002): *Accuracy and stability of numerical algorithms*, Vol. 80., Siam.
+  
+- Hosmer Jr, D. W., Lemeshow, S., & Sturdivant, R. X. (2013): *Applied logistic regression*, Vol. 398., John Wiley & Sons.
+ 
+- Kashyap, A. K. (1995): *Sticky prices: New evidence from retail catalogs*. The Quarterly Journal of Economics, 110(1), 245-274.
+
+- Killeen, P. R. (2005): *An alternative to null-hypothesis significance tests*. Psychological science, 16(5), 345-353.
+
+- Kim, T. K. (2015): *T test as a parametric statistic*. Korean journal of anesthesiology, 68(6), 540.
+
+- Kleinbaum, D. G., Dietz, K., Gail, M., Klein, M., & Klein, M. (2002): *Logistic regression*. New York: Springer-Verlag.
+
+- Knotek, E. S. (2011): *Convenient prices and price rigidity: cross-sectional evidence*. Review of Economics and Statistics, 93(3), 1076-1086.
+
+- Kuorikoski, J., Lehtinen, A., & Marchionni, C. (2007): *Economics as robustness analysis*. 2007.
+
+- Levy, D., Lee, D., Chen, H., Kauffman, R. J., and Bergen, M. (2011): *Price points and price rigidity*. Review of Economics and Statistics, 93(4), 1417-1431.
+
+- Mood, A., Graybill, F., & Boes, D. (1974): *Introduction to the theory of statistics*. 3rd mcgraw-hill.
+
+- Pathieu, Diane (December 28, 2013): *"Dominick's stores close doors at noon Saturday across Chicago"*., ABC7 News (2013), Retrieved April, 01, 2019, on:https://abc7chicago.com/archive/9374521/.
+
+- Sheshinski, E., & Weiss, Y. (1977): *Inflation and costs of price adjustment*. The Review of Economic Studies, 44(2), 287-303.
+
+- Stammann, A., Heiss, F., & McFadden, D. (2016): *Estimating Fixed Effects Logit Models with Large Panel Data*. Working Paper.
+
+- Student. (1908). *The probable error of a mean*. Biometrika, 1-25.
+
+- Szumilas, M. (2010): *Explaining odds ratios. Journal of the Canadian academy of child and adolescent psychiatry*, 19(3), 227.
+
+- Thompson, M. (1997): *Theory of sample surveys*, Vol. 74., CRC Press.
+
+- Utts, J. M. (2014): *Seeing through statistics*. Cengage Learning.
+
+- Wilkinson, L., & Friendly, M. (2009): *The history of the cluster heat map*. The American Statistician, 63(2), 179-184.
+
+- Zivot, E. (2012): *Introduction to maximum likelihood estimation*. Technical Presentation.
+
+
+### R-packages
+
+- Baptiste Auguie (2017): *gridExtra: Miscellaneous Functions for "Grid" Graphics*. R package version 2.3.
+  https://CRAN.R-project.org/package=gridExtra.
+
+- Carson Sievert (2018): *plotly for R*. https://plotly-book.cpsievert.me.
+
+- David Robinson and Alex Hayes (2018): *broom: Convert Statistical Analysis Objects into Tidy Tibbles*. R package version 0.5.0. https://CRAN.R-project.org/package=broom.
+
+- Frank E Harrell Jr, with contributions from Charles Dupont and many others (2018): *Hmisc: Harrell Miscellaneous*. R package version 4.1-1. https://CRAN.R-project.org/package=Hmisc.
+
+- Gregory R. Warnes, Ben Bolker, Gregor Gorjanc, Gabor Grothendieck, Ales Korosec, Thomas Lumley, Don MacQueen, Arni Magnusson, Jim Rogers and others (2015): *gdata: Various R Programming Tools for Data Manipulation*. R package version 2.17.0. https://CRAN.R-project.org/package=gdata.
+
+- Hlavac, Marek (2018): *stargazer: Well-Formatted Regression and Summary Statistics Tables*. R package version 5.2.1., https://CRAN.R-project.org/package=stargazer.
+
+- Kranz, S. (2018): *RTutor: R problem sets with automatic test of solution and hints*. R package version 2015.12.16. https://github.com/skranz/RTutor.
+
+- Matt Dowle and Arun Srinivasan (2018): *data.table: Extension of `data.frame`*. R package version 1.11.8.
+https://CRAN.R-project.org/package=data.table.
+
+- R Core Team (2018): *Serialization Interface for Single Objects*. R package base version v3.5.1 https://cran.r-project.org/web/packages/foreign/foreign.pdf.
+
+- Wickham, H (2016): *ggplot2: Elegant Graphics for Data Analysis*. Springer-Verlag New York. ISBN 978-3-319-24277-4, http://ggplot2.org. 
+
+- Wickham, H., Francois, R., Henry, L. and Müller, K. (2018): *dplyr. A Grammar of Data Manipulation*. R package version 0.7.8. https://cran.r-project.org/web/packages/dplyr/dplyr.pdf.
+

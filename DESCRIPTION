@@ -1,0 +1,11 @@
+Package: RTutorPricePoints
+Type: Package
+Title: RTutor problem set PricePoints
+Version: 0.1
+Date: 2019-19-04
+Author: Timo Sturm
+Maintainer: Timo Sturm <timo.sturm.de@gmail.com>
+Description: RTutor problem set PricePoints
+License: Problem set content: Creative Commons (CC BY-SA)
+	Package code: GPL >= 2.0
+Depends: RTutor, ggplot2, data.table, Hmisc, bife, broom, plotly, scales, RColorBrewer, grid, gridExtra, knitr, gdata, webshot, dplyr, condformat, stargazer
